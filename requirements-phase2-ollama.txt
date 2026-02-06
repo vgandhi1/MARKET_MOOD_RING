@@ -1,0 +1,14 @@
+# Market Mood Ring - Phase 2: Ollama Integration
+# Install Phase 1 requirements first: pip install -r requirements.txt
+# Then install Phase 2: pip install -r requirements-phase2-ollama.txt
+
+# Vector embeddings (required for RAG)
+sentence-transformers>=2.2.2
+
+# Ollama Python client
+ollama>=0.1.0
+
+# Note: Ollama server runs in Docker container
+# This package is only for Python client to communicate with Ollama
+# Start Ollama: docker-compose up -d ollama
+# Initialize model: docker exec -it market_ollama ollama run llama3

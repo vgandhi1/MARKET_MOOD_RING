@@ -1,0 +1,26 @@
+# Market Mood Ring - Phase 2: LLM API Integration
+# Install Phase 1 requirements first: pip install -r requirements.txt
+# Then install Phase 2: pip install -r requirements-phase2-llm-api.txt
+
+# Vector embeddings (required for RAG)
+sentence-transformers>=2.2.2
+
+# LLM API Clients (choose one or more based on your provider)
+# Option 1: OpenAI (GPT-4, GPT-3.5)
+openai>=1.0.0
+
+# Option 2: Anthropic Claude
+# anthropic>=0.18.0
+
+# Option 3: Google Gemini
+# google-generativeai>=0.3.0
+
+# Option 4: Hugging Face Inference API
+# huggingface-hub>=0.20.0
+# transformers>=4.41.0
+
+# Option 5: Azure OpenAI (uses openai package with Azure config)
+# openai>=1.0.0
+
+# Note: Uncomment the provider(s) you want to use
+# You can install multiple providers if needed

@@ -1,0 +1,19 @@
+# Market Mood Ring - Phase 1 Requirements
+# ETL Pipeline with Sentiment Analysis (NO RAG/AI features)
+
+# Core dependencies
+requests>=2.31.0
+pandas>=2.0.0
+
+# Database
+psycopg2-binary>=2.9.9
+
+# Kafka
+kafka-python>=2.0.2
+
+# Dashboard
+streamlit>=1.28.0
+plotly>=5.17.0
+
+# Note: sentence-transformers and torch are NOT included (Phase 2 only)
+# This avoids downloading 888MB+ PyTorch during Phase 1 builds

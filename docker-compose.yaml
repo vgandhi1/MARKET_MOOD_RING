@@ -1,0 +1,172 @@
+services:
+  # Zookeeper (Required for Kafka)
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: market_zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - market_network
+
+  # Kafka Broker
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: market_kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+      KAFKA_LOG_RETENTION_HOURS: 24
+      KAFKA_LOG_RETENTION_BYTES: 1073741824
+    networks:
+      - market_network
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # PostgreSQL with pgvector
+  postgres:
+    image: pgvector/pgvector:pg14
+    container_name: market_postgres
+    environment:
+      POSTGRES_USER: market_user
+      POSTGRES_PASSWORD: market_password
+      POSTGRES_DB: market_mood
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - market_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U market_user -d market_mood"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Flink JobManager
+  jobmanager:
+    build:
+      context: .
+      dockerfile: Dockerfile.flink
+    container_name: market_jobmanager
+    command: jobmanager
+    ports:
+      - "8081:8081"
+    environment:
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: jobmanager
+        taskmanager.numberOfTaskSlots: 2
+        parallelism.default: 1
+    volumes:
+      - ./flink_jobs:/opt/flink/usrlib
+    networks:
+      - market_network
+    depends_on:
+      - kafka
+      - postgres
+
+  # Flink TaskManager
+  taskmanager:
+    build:
+      context: .
+      dockerfile: Dockerfile.flink
+    container_name: market_taskmanager
+    command: taskmanager
+    scale: 1
+    environment:
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: jobmanager
+        taskmanager.numberOfTaskSlots: 2
+        parallelism.default: 1
+    volumes:
+      - ./flink_jobs:/opt/flink/usrlib
+    networks:
+      - market_network
+    depends_on:
+      - jobmanager
+
+  # Ollama (Local LLM) - PHASE 2: RAG Pipeline
+  # Uncomment when ready for Phase 2 development
+  # ollama:
+  #   image: ollama/ollama:latest
+  #   container_name: market_ollama
+  #   ports:
+  #     - "11434:11434"
+  #   volumes:
+  #     - ollama_data:/root/.ollama
+  #   networks:
+  #     - vibe_network
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+
+  # Streamlit Dashboard
+  dashboard:
+    build:
+      context: .
+      dockerfile: ./dashboard/Dockerfile
+    container_name: market_dashboard
+    ports:
+      - "8502:8501"  # Changed to 8502 to avoid conflict with other Streamlit instance
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_DB=market_mood
+      - POSTGRES_USER=market_user
+      - POSTGRES_PASSWORD=market_password
+    volumes:
+      - ./dashboard:/app
+    networks:
+      - market_network
+    depends_on:
+      - postgres
+      # - ollama  # PHASE 2: Uncomment when ready for RAG pipeline
+
+  # Producer Service (for running news_producer.py, price_producer.py, rag_ingest.py)
+  producer:
+    build:
+      context: .
+      dockerfile: ./producer/Dockerfile
+    container_name: market_producer
+    environment:
+      - FINNHUB_API_KEY=${FINNHUB_API_KEY}
+      - STOCK_SYMBOLS=${STOCK_SYMBOLS:-}  # Optional: comma-separated stock symbols (default: 25+ regular stocks)
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+      - POSTGRES_HOST=postgres
+      - POSTGRES_DB=market_mood
+      - POSTGRES_USER=market_user
+      - POSTGRES_PASSWORD=market_password
+    volumes:
+      - ./producer:/app
+    networks:
+      - market_network
+    depends_on:
+      - kafka
+      - postgres
+    profiles:
+      - producers  # Profile label (can be anything). Prevents auto-start with 'docker-compose up'.
+                   # Use 'docker-compose run producer' to run scripts (works regardless of profiles)
+
+networks:
+  market_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  ollama_data:

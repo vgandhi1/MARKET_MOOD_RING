@@ -1,0 +1,192 @@
+{
+  "description": "Optimized stock tickers for Market Mood Ring - selected for high news volume and liquidity",
+  "version": "1.0",
+  "tickers": [
+    {
+      "symbol": "AAPL",
+      "name": "Apple",
+      "sector": "Technology",
+      "category": "Tech Giants"
+    },
+    {
+      "symbol": "MSFT",
+      "name": "Microsoft",
+      "sector": "Technology",
+      "category": "Tech Giants"
+    },
+    {
+      "symbol": "GOOGL",
+      "name": "Alphabet (Google)",
+      "sector": "Technology",
+      "category": "Tech Giants"
+    },
+    {
+      "symbol": "AMZN",
+      "name": "Amazon",
+      "sector": "Technology",
+      "category": "Tech Giants"
+    },
+    {
+      "symbol": "META",
+      "name": "Meta (Facebook)",
+      "sector": "Technology",
+      "category": "Tech Giants"
+    },
+    {
+      "symbol": "NVDA",
+      "name": "Nvidia",
+      "sector": "Technology",
+      "category": "Tech Giants",
+      "notes": "AI hype - excellent for sentiment"
+    },
+    {
+      "symbol": "TSLA",
+      "name": "Tesla",
+      "sector": "Technology",
+      "category": "Tech Giants",
+      "notes": "Extremely sensitive to news/tweets"
+    },
+    {
+      "symbol": "NFLX",
+      "name": "Netflix",
+      "sector": "Technology",
+      "category": "Tech Giants"
+    },
+    {
+      "symbol": "AMD",
+      "name": "Advanced Micro Devices",
+      "sector": "Technology",
+      "category": "Tech Giants"
+    },
+    {
+      "symbol": "INTC",
+      "name": "Intel",
+      "sector": "Technology",
+      "category": "Tech Giants"
+    },
+    {
+      "symbol": "JPM",
+      "name": "JPMorgan Chase",
+      "sector": "Financials",
+      "category": "Financials & Fintech"
+    },
+    {
+      "symbol": "BAC",
+      "name": "Bank of America",
+      "sector": "Financials",
+      "category": "Financials & Fintech"
+    },
+    {
+      "symbol": "GS",
+      "name": "Goldman Sachs",
+      "sector": "Financials",
+      "category": "Financials & Fintech"
+    },
+    {
+      "symbol": "V",
+      "name": "Visa",
+      "sector": "Financials",
+      "category": "Financials & Fintech"
+    },
+    {
+      "symbol": "MA",
+      "name": "Mastercard",
+      "sector": "Financials",
+      "category": "Financials & Fintech"
+    },
+    {
+      "symbol": "PYPL",
+      "name": "PayPal",
+      "sector": "Financials",
+      "category": "Financials & Fintech"
+    },
+    {
+      "symbol": "COIN",
+      "name": "Coinbase",
+      "sector": "Financials",
+      "category": "Financials & Fintech",
+      "notes": "Correlates with Crypto 'Vibes'"
+    },
+    {
+      "symbol": "DIS",
+      "name": "Disney",
+      "sector": "Consumer",
+      "category": "Consumer & Entertainment"
+    },
+    {
+      "symbol": "NKE",
+      "name": "Nike",
+      "sector": "Consumer",
+      "category": "Consumer & Entertainment"
+    },
+    {
+      "symbol": "KO",
+      "name": "Coca-Cola",
+      "sector": "Consumer",
+      "category": "Consumer & Entertainment"
+    },
+    {
+      "symbol": "PEP",
+      "name": "PepsiCo",
+      "sector": "Consumer",
+      "category": "Consumer & Entertainment"
+    },
+    {
+      "symbol": "WMT",
+      "name": "Walmart",
+      "sector": "Consumer",
+      "category": "Consumer & Entertainment"
+    },
+    {
+      "symbol": "COST",
+      "name": "Costco",
+      "sector": "Consumer",
+      "category": "Consumer & Entertainment"
+    },
+    {
+      "symbol": "SBUX",
+      "name": "Starbucks",
+      "sector": "Consumer",
+      "category": "Consumer & Entertainment"
+    },
+    {
+      "symbol": "MCD",
+      "name": "McDonald's",
+      "sector": "Consumer",
+      "category": "Consumer & Entertainment"
+    },
+    {
+      "symbol": "BA",
+      "name": "Boeing",
+      "sector": "Industrial",
+      "category": "Industrial & Energy",
+      "notes": "High news volume regarding safety/production"
+    },
+    {
+      "symbol": "XOM",
+      "name": "Exxon Mobil",
+      "sector": "Energy",
+      "category": "Industrial & Energy"
+    },
+    {
+      "symbol": "CVX",
+      "name": "Chevron",
+      "sector": "Energy",
+      "category": "Industrial & Energy"
+    },
+    {
+      "symbol": "LLY",
+      "name": "Eli Lilly",
+      "sector": "Healthcare",
+      "category": "Pharma & Retail",
+      "notes": "Weight loss drug news drives sentiment"
+    },
+    {
+      "symbol": "PLTR",
+      "name": "Palantir",
+      "sector": "Technology",
+      "category": "Pharma & Retail",
+      "notes": "Retail investor favorite"
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+# Custom Flink image with Python and NLTK support
+FROM flink:1.17-scala_2.12-java11
+
+# Switch to root to install packages
+USER root
+
+# Install Python 3 and pip
+RUN apt-get update && \
+    apt-get install -y python3 python3-pip && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Create symlink: python -> python3 (required by Flink)
+RUN ln -s /usr/bin/python3 /usr/bin/python
+
+# Install PyFlink and NLTK dependencies
+RUN pip3 install apache-flink==1.17.0 apache-flink-libraries nltk
+
+# Download Kafka connector JAR (required for Kafka source/sink)
+RUN wget -q -O /opt/flink/lib/flink-sql-connector-kafka-1.17.0.jar \
+    https://repo1.maven.org/maven2/org/apache/flink/flink-sql-connector-kafka/1.17.0/flink-sql-connector-kafka-1.17.0.jar
+
+# Download JDBC connector JAR (required for PostgreSQL sink)
+RUN wget -q -O /opt/flink/lib/flink-connector-jdbc-3.1.1-1.17.jar \
+    https://repo1.maven.org/maven2/org/apache/flink/flink-connector-jdbc/3.1.1-1.17/flink-connector-jdbc-3.1.1-1.17.jar && \
+    wget -q -O /opt/flink/lib/postgresql-42.5.4.jar \
+    https://repo1.maven.org/maven2/org/postgresql/postgresql/42.5.4/postgresql-42.5.4.jar
+
+# Set proper ownership
+RUN chown -R flink:flink /opt/flink/lib/
+
+# Download NLTK data (Vader lexicon)
+RUN python3 -c "import nltk; nltk.download('vader_lexicon'); nltk.download('punkt')"
+
+# Copy Flink job
+COPY flink_jobs/flink_sentiment.py /opt/flink/usrlib/flink_sentiment.py
+
+# Set working directory
+WORKDIR /opt/flink
+
+# Switch back to flink user
+USER flink
