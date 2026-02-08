@@ -88,10 +88,10 @@ graph TD
     %% RAG Path
     PROD -->|Embeddings| DB
     DB <-->|Vector Search| DASH[Streamlit Dashboard]
-    OLLAMA[Ollama (Llama 3)] <-->|Generation| DASH
+    OLLAMA[Ollama Llama 3] <-->|Generation| DASH
 
     %% User
-    User(👱 User) -->|View & Chat| DASH
+    USER[User] -->|View & Chat| DASH
 ```
 
 ### Core Components
