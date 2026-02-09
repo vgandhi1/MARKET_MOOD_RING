@@ -67,7 +67,7 @@ if page == "📊 Live Dashboard":
         cursor.execute("""
             SELECT symbol, price, timestamp 
             FROM price_log 
-            WHERE timestamp > NOW() - INTERVAL '24 hours'
+            WHERE timestamp > NOW() - INTERVAL '72 hours'
             ORDER BY timestamp DESC
             LIMIT 1000
         """)
@@ -90,7 +90,7 @@ if page == "📊 Live Dashboard":
                     df_filtered, 
                     x='timestamp', 
                     y='price',
-                    title=f"{selected_symbol} Price Trend (Last 24 Hours)",
+                    title=f"{selected_symbol} Price Trend (Last 72 Hours)",
                     labels={'price': 'Price ($)', 'timestamp': 'Time'}
                 )
                 fig.update_layout(height=500)
@@ -106,7 +106,7 @@ if page == "📊 Live Dashboard":
                 with col3:
                     st.metric("Last Update", latest_price['timestamp'].strftime("%H:%M:%S UTC"))
             else:
-                st.info(f"No price data available for {selected_symbol} in the last 24 hours.")
+                st.info(f"No price data available for {selected_symbol} in the last 72 hours.")
         else:
             st.info("No price data available. Start the price producer to see live data.")
             
