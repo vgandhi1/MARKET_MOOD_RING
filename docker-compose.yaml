@@ -101,7 +101,7 @@ services:
       - jobmanager
 
   # Ollama (Local LLM) - PHASE 2: RAG Pipeline
-  # Uncomment when ready for Phase 2 development
+  # Commented out to use Windows Host Ollama (Performance Optimization)
   # ollama:
   #   image: ollama/ollama:latest
   #   container_name: market_ollama
@@ -110,7 +110,7 @@ services:
   #   volumes:
   #     - ollama_data:/root/.ollama
   #   networks:
-  #     - vibe_network
+  #     - market_network
   #   healthcheck:
   #     test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
   #     interval: 30s
@@ -130,23 +130,27 @@ services:
       - POSTGRES_DB=market_mood
       - POSTGRES_USER=market_user
       - POSTGRES_PASSWORD=market_password
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
     volumes:
       - ./dashboard:/app
     networks:
       - market_network
+    # Connect to Windows Host for Ollama (GPU access)
+    extra_hosts:
+      - "host.docker.internal:${WINDOWS_HOST_IP:-172.17.0.1}"
     depends_on:
       - postgres
-      # - ollama  # PHASE 2: Uncomment when ready for RAG pipeline
+      # - ollama  # Using Host Ollama instead
 
-  # Producer Service (for running news_producer.py, price_producer.py, rag_ingest.py)
-  producer:
+  # Base Producer Configuration (Toolbox & Base for others)
+  producer: &producer_base
     build:
       context: .
       dockerfile: ./producer/Dockerfile
-    container_name: market_producer
+    container_name: market_producer_toolbox
     environment:
       - FINNHUB_API_KEY=${FINNHUB_API_KEY}
-      - STOCK_SYMBOLS=${STOCK_SYMBOLS:-}  # Optional: comma-separated stock symbols (default: 25+ regular stocks)
+      - STOCK_SYMBOLS=${STOCK_SYMBOLS:-}  # Optional: comma-separated stock symbols
       - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
       - POSTGRES_HOST=postgres
       - POSTGRES_DB=market_mood
@@ -160,8 +164,39 @@ services:
       - kafka
       - postgres
     profiles:
-      - producers  # Profile label (can be anything). Prevents auto-start with 'docker-compose up'.
-                   # Use 'docker-compose run producer' to run scripts (works regardless of profiles)
+      - manual  # Keeps this out of "up" unless requested, but used for inheritance
+
+  # 1. News Producer Service
+  news-producer:
+    <<: *producer_base
+    container_name: market_news_producer
+    command: ["python", "-u", "news_producer.py"]
+    profiles:
+      - producers
+
+  # 2. Price Producer Service
+  price-producer:
+    <<: *producer_base
+    container_name: market_price_producer
+    command: ["python", "-u", "price_producer.py"]
+    profiles:
+      - producers
+
+  # 3. Price Consumer Service
+  price-consumer:
+    <<: *producer_base
+    container_name: market_price_consumer
+    command: ["python", "-u", "price_consumer.py"]
+    profiles:
+      - producers
+
+  # 4. RAG Ingest Service (Phase 2)
+  rag-ingest:
+    <<: *producer_base
+    container_name: market_rag_ingest
+    command: ["python", "-u", "rag_ingest.py"]
+    profiles:
+      - producers
 
 networks:
   market_network:

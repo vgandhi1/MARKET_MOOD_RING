@@ -3,9 +3,8 @@
 > **A Data Engineering & GenAI Portfolio Project**
 > *Stack: Apache Kafka, Apache Flink, PostgreSQL (pgvector), Ollama (Llama 3), Streamlit, Docker.*
 > 
-> **Current Phase: Phase 1 - ETL Pipeline with Sentiment Analysis (No LLM/Ollama)**  
-> **Phase 2: LLM Integration (Future Development)**  
-> **Phase 3: Ollama Integration (Future Development)**
+> **Current Phase: Combined Development Phase (Phase 1 + Phase 2 Ollama)**  
+> **Status:** Active Development - ETL Pipeline + Local LLM Integration Enabled
 
 ---
 
@@ -57,18 +56,15 @@ The **Market Mood Ring** is a real-time financial analytics platform designed to
 
 ### Key Features
 
-**Phase 1 (Current Focus - No LLM/Ollama):**
+**Phase 1 (Active):**
 * **Real-Time Ingestion:** Streams live stock prices and news headlines via Kafka.
 * **Sentiment Analysis:** Uses Apache Flink with NLTK to score headlines (Positive/Negative) on the fly.
 * **Interactive Dashboard:** A Streamlit UI featuring live price charts and sentiment score tables.
 
-**Phase 2 (Future Development - LLM Integration):**
-* **RAG Pipeline:** Stores news embeddings in PostgreSQL (pgvector) for semantic retrieval.
-* **AI Analyst:** LLM-powered chatbot (cloud API or local model) that answers queries using live market context.
-
-**Phase 3 (Future Development - Ollama Integration):**
-* **Local LLM:** Ollama server running Llama 3 locally.
-* **Enhanced AI Analyst:** Faster, private, and customizable AI responses.
+**Phase 2/3 - Ollama Integration (Active):**
+* **Local LLM:** Ollama server running Llama 3 locally (Enabled).
+* **AI Analyst:** Chatbot enabled in Dashboard using local Ollama model.
+* **RAG Pipeline:** Ready for embedding generation and vector search.
 
 ---
 
@@ -121,10 +117,11 @@ graph TD
 - **Extensions:** pgvector (for Phase 2/3 RAG)
 - **Port:** 5432
 
-**AI/LLM: Ollama (Local - Phase 3)**
-- **Model:** llama3 (Runs on CPU/GPU)
-- **Service:** REST API at `http://ollama:11434`
-- **Status:** Commented out in Phase 1, enabled in Phase 3
+**AI/LLM: Ollama (Local - Active)**
+- **Model:** llama3 (Runs on Windows Host GPU)
+- **Service:** REST API at `http://host.docker.internal:11434`
+- **Status:** Enabled (Combined Phase) - Using Windows Host
+- **Config:** Requires `OLLAMA_HOST=0.0.0.0:11434` on Windows
 
 **UI: Streamlit**
 - **Features:** Real-time charts + Chat interface
@@ -200,27 +197,21 @@ docker-compose up -d --build
 ```
 > **Note:** The initial build may take several minutes as it downloads large database images.
 
-### 4. Start the Data Pipelines (Phase 1)
-Open a new terminal to trigger the data producers:
+### 4. Start the Data Pipelines (Automated)
+Run the automated pipeline script to start all producers (News, Price, Consumer, RAG Ingest) in the background:
 
-**Terminal A (News Producer):**
 ```bash
-docker-compose run --rm producer python news_producer.py
+./start_data_pipeline.sh
 ```
 
-**Terminal B (Price Producer):**
+**Or verify individual services:**
 ```bash
-docker-compose run --rm producer python price_producer.py
+docker-compose --profile producers ps
 ```
 
-**Terminal C (Price Consumer):**
+**To view logs:**
 ```bash
-docker-compose run --rm producer python price_consumer.py
-```
-
-**Terminal D (RAG Embeddings - Phase 2):**
-```bash
-docker-compose run --rm producer python rag_ingest.py
+docker-compose logs -f news-producer price-producer
 ```
 
 ### 5. Submit Flink Job
@@ -311,11 +302,18 @@ When ready for Phase 2 development:
 3. Add LLM API client (OpenAI, Anthropic, etc.)
 4. Start RAG ingestion: `docker-compose run --rm producer python rag_ingest.py`
 
-### Phase 3: Ollama Integration
-When ready for Phase 3 development:
-1. Uncomment Ollama service in `docker-compose.yaml`
-2. Initialize Ollama: `docker exec -it market_ollama ollama run llama3`
-3. Update dashboard to use Ollama API endpoint
+### Phase 3: Ollama Integration (Windows Host)
+1. **Windows Setup:**
+   - Set Environment Variable: `OLLAMA_HOST=0.0.0.0:11434`
+   - Restart Ollama on Windows
+   - Pull Model: `ollama run llama3` (in Windows Command Prompt)
+
+2. **Docker Setup:**
+   - `docker-compose.yaml` configured with `extra_hosts: "host.docker.internal:host-gateway"`
+   - Dashboard connects to `http://host.docker.internal:11434`
+
+3. **Verify:**
+   - Dashboard should connect to your Windows Ollama instance for GPU acceleration.
 
 See `docs/phases/PHASE_PLANNING.md` for detailed phase information.
 

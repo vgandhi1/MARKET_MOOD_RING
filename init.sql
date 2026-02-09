@@ -28,14 +28,14 @@ CREATE TABLE IF NOT EXISTS sentiment_log (
 );
 
 -- Table 3: financial_knowledge (Vector Store) - PHASE 2: RAG Pipeline
--- Uncomment when ready for Phase 2 development
--- CREATE TABLE IF NOT EXISTS financial_knowledge (
---     id SERIAL PRIMARY KEY,
---     symbol VARCHAR(10),
---     content TEXT NOT NULL,
---     embedding vector(384) NOT NULL,
---     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
--- );
+-- Enabled for Combined Phase Development
+CREATE TABLE IF NOT EXISTS financial_knowledge (
+    id SERIAL PRIMARY KEY,
+    symbol VARCHAR(10),
+    content TEXT NOT NULL,
+    embedding vector(384) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
 -- Grant table privileges
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO market_user;
@@ -44,9 +44,9 @@ GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO market_user;
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_price_log_symbol_timestamp ON price_log(symbol, timestamp DESC);
 CREATE INDEX IF NOT EXISTS idx_sentiment_log_symbol ON sentiment_log(symbol);
--- PHASE 2: Uncomment when ready for RAG pipeline
--- CREATE INDEX IF NOT EXISTS idx_financial_knowledge_symbol ON financial_knowledge(symbol);
--- CREATE INDEX IF NOT EXISTS idx_financial_knowledge_embedding ON financial_knowledge USING ivfflat (embedding vector_cosine_ops);
+-- PHASE 2: Enabled for RAG pipeline
+CREATE INDEX IF NOT EXISTS idx_financial_knowledge_symbol ON financial_knowledge(symbol);
+CREATE INDEX IF NOT EXISTS idx_financial_knowledge_embedding ON financial_knowledge USING ivfflat (embedding vector_cosine_ops);
 
 -- Tables created successfully
 -- You can verify with: \dt

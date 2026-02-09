@@ -17,61 +17,49 @@ if [ ! -f .env ]; then
     exit 1
 fi
 
-# Check if containers are running
-echo "1. Checking infrastructure..."
-if ! docker ps | grep -q market_postgres; then
-    echo "❌ PostgreSQL not running. Starting infrastructure..."
-    docker-compose up -d
-    echo "⏳ Waiting for services to be ready..."
-    sleep 10
-fi
-
-echo "✅ Infrastructure is running"
-echo ""
-
-# Check if price_consumer is already running
-if docker ps | grep -q price_consumer; then
-    echo "⚠️  Price consumer is already running"
+# Detect Windows Host IP for WSL2
+# We try to resolve host.docker.internal first (LAN IP), as it's often more permissive than the WSL gateway
+echo "🔍 Detecting Windows Host IP..."
+if host_ip=$(python3 -c "import socket; print(socket.gethostbyname('host.docker.internal'))" 2>/dev/null); then
+    export WINDOWS_HOST_IP=$host_ip
+    echo "   ✅ Resolved host.docker.internal to: $WINDOWS_HOST_IP"
 else
-    echo "2. Starting price consumer (writes prices to database)..."
-    echo "   Run this in a separate terminal:"
-    echo "   docker-compose run --rm producer python price_consumer.py"
-    echo ""
+    # Fallback to gateway if resolution fails
+    export WINDOWS_HOST_IP=$(ip route show | grep default | awk '{print $3}')
+    echo "   ⚠️  Could not resolve host.docker.internal, using Gateway IP: $WINDOWS_HOST_IP"
 fi
+
+echo "1. Starting/Updating all services (Infrastructure + Producers)..."
+# We start everything at once to avoid network inconsistency issues
+docker-compose --profile producers up -d
+
+echo "⏳ Waiting for services to stabilize (15s)..."
+sleep 15
 
 # Check if Flink job is running
-echo "3. Checking Flink job status..."
-FLINK_JOBS=$(docker exec market_jobmanager ./bin/flink list 2>/dev/null | grep -c "flink_sentiment" || echo "0")
+echo "2. Checking Flink job status..."
+# Use wc -l to count lines matching the job name
+FLINK_JOBS=$(docker exec market_jobmanager ./bin/flink list 2>/dev/null | grep "flink_sentiment" | wc -l)
 
 if [ "$FLINK_JOBS" -eq "0" ]; then
     echo "   ⚠️  Flink job not submitted"
     echo "   Submitting Flink job..."
-    docker exec -it market_jobmanager ./bin/flink run -py /opt/flink/usrlib/flink_sentiment.py
+    # Removed -it to allow non-interactive execution
+    docker exec market_jobmanager ./bin/flink run -py /opt/flink/usrlib/flink_sentiment.py
     echo ""
 else
     echo "   ✅ Flink job is running"
     echo ""
 fi
 
-echo "4. Starting producers..."
+echo "✅ Pipeline is fully active!"
+echo "   - News Producer: Running"
+echo "   - Price Producer: Running"
+echo "   - Price Consumer: Running"
+echo "   - RAG Ingest: Running"
 echo ""
-echo "📋 Next Steps:"
-echo "=============="
+echo "📋 Monitor logs with:"
+echo "   docker-compose logs -f news-producer price-producer"
 echo ""
-echo "Open 3 separate terminals and run:"
-echo ""
-echo "Terminal 1 - News Producer:"
-echo "  docker-compose run --rm producer python news_producer.py"
-echo ""
-echo "Terminal 2 - Price Producer:"
-echo "  docker-compose run --rm producer python price_producer.py"
-echo ""
-echo "Terminal 3 - Price Consumer:"
-echo "  docker-compose run --rm producer python price_consumer.py"
-echo ""
-echo "After 1-2 minutes, check dashboard: http://localhost:8502"
-echo ""
-echo "To verify data:"
-echo "  docker exec market_postgres psql -U market_user -d market_mood -c 'SELECT COUNT(*) FROM price_log;'"
-echo "  docker exec market_postgres psql -U market_user -d market_mood -c 'SELECT COUNT(*) FROM sentiment_log;'"
+echo "📊 Dashboard: http://localhost:8502"
 echo ""

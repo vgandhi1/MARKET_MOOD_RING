@@ -1,11 +1,12 @@
 import streamlit as st
 import psycopg2
-# PHASE 2: Uncomment for RAG pipeline
-# from sentence_transformers import SentenceTransformer
-# import requests
+# PHASE 2: Enabled for Combined Phase Development
+from sentence_transformers import SentenceTransformer
+import requests
 import pandas as pd
 import plotly.express as px
 from datetime import datetime, timedelta
+import os
 
 # Page Configuration
 st.set_page_config(
@@ -18,11 +19,11 @@ st.set_page_config(
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# PHASE 2: Uncomment for RAG pipeline
+# PHASE 2: Enabled for Combined Phase Development
 # Load embedding model (cached)
-# @st.cache_resource
-# def load_model():
-#     return SentenceTransformer('all-MiniLM-L6-v2')
+@st.cache_resource
+def load_model():
+    return SentenceTransformer('all-MiniLM-L6-v2')
 
 # Database connection (cached)
 @st.cache_resource
@@ -40,17 +41,16 @@ def get_db_connection():
         st.error(f"Database connection error: {e}")
         return None
 
-# PHASE 2: Uncomment for RAG pipeline
-# model = load_model()
+# PHASE 2: Enabled for Combined Phase Development
+model = load_model()
 conn = get_db_connection()
 
 # Sidebar Navigation
-st.sidebar.title("🦍 Market Mood Ring - Phase 1")
-# PHASE 1: Only Live Dashboard available
-# PHASE 2: Uncomment AI Analyst option
+st.sidebar.title("🦍 Market Mood Ring - Combined Phase")
+# PHASE 1 & 2 Combined
 page = st.sidebar.selectbox(
     "Navigate",
-    ["📊 Live Dashboard"]  # PHASE 2: Add "💬 AI Analyst" here
+    ["📊 Live Dashboard", "💬 AI Analyst"]
 )
 
 # ===== PAGE 1: LIVE DASHBOARD =====
@@ -142,8 +142,8 @@ if page == "📊 Live Dashboard":
         st.error(f"Error fetching sentiment data: {e}")
 
 # ===== PAGE 2: AI ANALYST (PHASE 2) =====
-# PHASE 2: Uncomment this entire section when ready for RAG pipeline
-# elif page == "💬 AI Analyst":
+# PHASE 2: Enabled for Combined Phase Development
+elif page == "💬 AI Analyst":
     st.title("💬 AI Financial Analyst")
     st.markdown("Ask me about market movements, stock news, or sentiment analysis!")
     
@@ -205,9 +205,10 @@ INSTRUCTIONS:
 5. Explain financial jargon simply (ELI5 style).
 6. End with a "Vibe Check" summary (e.g., "Overall Vibe: 🐻 Bearish due to regulatory fears")."""
                     
-                    # Call Local Ollama Container
+                    # Call Local Ollama (Windows Host via Docker internal gateway)
+                    ollama_base_url = os.getenv("OLLAMA_BASE_URL", "http://host.docker.internal:11434")
                     response = requests.post(
-                        "http://ollama:11434/api/generate",
+                        f"{ollama_base_url}/api/generate",
                         json={
                             "model": "llama3",
                             "prompt": full_prompt,
@@ -222,7 +223,7 @@ INSTRUCTIONS:
                         bot_reply = f"Error: Ollama returned {response.status_code}. Make sure Ollama is running and llama3 model is pulled."
                         
                 except requests.exceptions.ConnectionError:
-                    bot_reply = "⚠️ Cannot reach Ollama. Please ensure:\n1. The `market_ollama` container is running\n2. You've run: `docker exec -it market_ollama ollama run llama3`"
+                    bot_reply = "⚠️ Cannot reach Ollama on Windows Host. Please ensure:\n1. Ollama is running on Windows\n2. Env Var `OLLAMA_HOST=0.0.0.0:11434` is set on Windows\n3. You restarted Ollama after setting the variable."
                 except Exception as e:
                     bot_reply = f"I cannot reach Ollama. Error: {e}"
                 

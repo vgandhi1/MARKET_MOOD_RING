@@ -47,6 +47,13 @@
       "notes": "Extremely sensitive to news/tweets"
     },
     {
+      "symbol": "RIVN",
+      "name": "Rivian",
+      "sector": "Technology",
+      "category": "Tech Giants",
+      "notes": "Electric vehicles - Adventurous forever"
+    },
+    {
       "symbol": "NFLX",
       "name": "Netflix",
       "sector": "Technology",

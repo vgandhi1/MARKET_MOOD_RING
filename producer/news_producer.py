@@ -8,7 +8,7 @@ import time
 import json
 import requests
 from kafka import KafkaProducer
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 # Configuration
@@ -55,10 +55,16 @@ SYMBOLS = load_tickers()
 def get_finnhub_news(symbol, api_key):
     """Fetch news for a symbol from Finnhub API"""
     url = f"https://finnhub.io/api/v1/company-news"
+    # Finnhub requires from/to dates.
+    # Use last 3 days to ensure we get *some* news for testing/dev,
+    # even if today is quiet or timezone differs.
+    today = datetime.now()
+    three_days_ago = today - timedelta(days=3)
+
     params = {
         'symbol': symbol,
-        'from': datetime.now().strftime('%Y-%m-%d'),
-        'to': datetime.now().strftime('%Y-%m-%d'),
+        'from': three_days_ago.strftime('%Y-%m-%d'),
+        'to': today.strftime('%Y-%m-%d'),
         'token': api_key
     }
     
@@ -112,6 +118,9 @@ def main():
             for symbol in SYMBOLS:
                 news_items = get_finnhub_news(symbol, FINNHUB_API_KEY)
                 api_calls_made += 1
+                
+                # Small delay to respect API rate limits (avoid bursting)
+                time.sleep(1.0)
                 
                 for news in news_items[:5]:  # Limit to 5 most recent per symbol
                     headline = news.get('headline', '')

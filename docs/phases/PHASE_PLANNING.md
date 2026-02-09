@@ -158,9 +158,12 @@ LLM Provider ← Vector Search ← Streamlit Chat
 
 ## 🎯 Current Status
 
-**Active Phase:** Phase 1  
-**Focus:** ETL Pipeline with Sentiment Analysis  
-**Next Steps:** Complete Phase 1 testing and validation
+**Active Phase:** Combined Development (Phase 1 + Ollama)
+**Focus:** Full Pipeline Testing (ETL + AI Analyst)
+**Next Steps:**
+1. Verify Kafka/Flink pipeline health.
+2. Verify Ollama connection and Llama 3 model download.
+3. Test AI Analyst chat responses.
 
 ---
 
