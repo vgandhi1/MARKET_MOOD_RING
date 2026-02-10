@@ -1,5 +1,9 @@
 # 🔍 Dashboard Shows No Data - Troubleshooting Guide
 
+**⚠️ Note:** For comprehensive troubleshooting, see **[TROUBLESHOOTING.md](../TROUBLESHOOTING.md)** (master guide with 35+ issues).
+
+---
+
 ## Problem
 
 Dashboard shows:
@@ -21,10 +25,29 @@ Kafka Topics (stock_news, stock_prices)
     ↓
 Consumers (price_consumer.py, Flink job)
     ↓
-PostgreSQL (price_log, sentiment_log)
+PostgreSQL (stock_prices, sentiment_log tables)
     ↓
 Dashboard (displays data)
 ```
+
+---
+
+## ✅ Quick Fix (Recommended)
+
+**Use the startup script - handles everything automatically:**
+
+```bash
+# Stop everything
+docker-compose --profile producers down
+
+# Start with automated script
+./start_data_pipeline.sh
+
+# Wait 2-3 minutes for data collection
+# Then refresh dashboard: http://localhost:8502
+```
+
+---
 
 ## Step-by-Step Troubleshooting
 
@@ -35,11 +58,11 @@ Dashboard (displays data)
 docker exec market_postgres psql -U market_user -d market_mood -c "\dt"
 
 # Check row counts
-docker exec market_postgres psql -U market_user -d market_mood -c "SELECT COUNT(*) FROM price_log;"
+docker exec market_postgres psql -U market_user -d market_mood -c "SELECT COUNT(*) FROM stock_prices;"
 docker exec market_postgres psql -U market_user -d market_mood -c "SELECT COUNT(*) FROM sentiment_log;"
 ```
 
-**Expected:** Tables should exist, but may have 0 rows if pipeline isn't running.
+**Expected:** Tables should exist. May have 0 rows if pipeline just started.
 
 ### Step 2: Check Kafka Topics Have Data
 
@@ -60,10 +83,17 @@ docker exec market_kafka kafka-console-consumer --bootstrap-server localhost:909
 
 ```bash
 # Check running containers
-docker ps | grep producer
+docker ps --filter "name=market_" | grep producer
+
+# Should see:
+# market_news_producer
+# market_price_producer
+# market_price_consumer
+# market_rag_ingest
 
 # Check producer logs
-docker logs <producer-container-name> | tail -20
+docker logs market_news_producer --tail 20
+docker logs market_price_producer --tail 20
 ```
 
 **Expected:** Should see logs like:
@@ -78,11 +108,16 @@ The `price_consumer.py` must be running to write prices to database:
 # Check if price_consumer is running
 docker ps | grep price_consumer
 
-# If not running, start it:
-docker-compose run --rm producer python price_consumer.py
+# Check logs
+docker logs market_price_consumer --tail 20
 ```
 
 **Expected:** Should see logs like "✅ Stored: AAPL @ $150.25"
+
+**If not running:** The startup script starts it automatically. If using manual method:
+```bash
+docker-compose restart price-consumer
+```
 
 ### Step 5: Verify Flink Job Is Running
 
@@ -94,112 +129,152 @@ docker-compose run --rm producer python price_consumer.py
 docker exec market_jobmanager ./bin/flink list
 ```
 
-**Expected:** Should see `flink_sentiment.py` job running.
+**Expected:** Should see `flink_sentiment` job with status RUNNING.
 
-**If not running, submit it:**
+**If not running:**
 ```bash
-docker exec -it market_jobmanager ./bin/flink run -py /opt/flink/usrlib/flink_sentiment.py
+docker exec market_jobmanager ./bin/flink run -py /opt/flink/usrlib/flink_sentiment.py
 ```
+
+See [FLINK_JOB_GUIDE.md](../FLINK_JOB_GUIDE.md) for detailed instructions.
+
+---
 
 ## Complete Setup Checklist
 
 ### ✅ Infrastructure Running
-- [ ] `docker-compose ps` shows all services up
+- [ ] `docker ps` shows all services up
 - [ ] Kafka is healthy
 - [ ] PostgreSQL is healthy
 - [ ] Flink JobManager and TaskManager are running
 
 ### ✅ Data Producers Running
-- [ ] News producer running: `docker-compose run --rm producer python news_producer.py`
-- [ ] Price producer running: `docker-compose run --rm producer python price_producer.py`
-- [ ] Price consumer running: `docker-compose run --rm producer python price_consumer.py`
+- [ ] `market_news_producer` - Up
+- [ ] `market_price_producer` - Up  
+- [ ] `market_price_consumer` - Up
+- [ ] `market_rag_ingest` - Up
 
 ### ✅ Flink Job Submitted
-- [ ] Flink job submitted: `docker exec -it market_jobmanager ./bin/flink run -py /opt/flink/usrlib/flink_sentiment.py`
-- [ ] Job shows as "Running" in Flink dashboard (http://localhost:8081)
+- [ ] Flink job running: `docker exec market_jobmanager ./bin/flink list`
+- [ ] Job shows as "RUNNING" in Flink dashboard (http://localhost:8081)
 
 ### ✅ Data Flowing
 - [ ] Kafka topics have messages
 - [ ] Database tables have rows
 - [ ] Dashboard shows data
 
+---
+
 ## Common Issues
 
-### Issue 1: No Producers Running
-**Symptom:** Empty Kafka topics
-**Fix:** Start producers in separate terminals
+### Issue 1: Used docker-compose without startup script
 
-### Issue 2: Price Consumer Not Running
-**Symptom:** Kafka has data, but `price_log` table is empty
-**Fix:** Start `price_consumer.py`
+**Symptom:** Producers exit with `NoBrokersAvailable` error
 
-### Issue 3: Flink Job Not Submitted
-**Symptom:** Kafka has news, but `sentiment_log` table is empty
-**Fix:** Submit Flink job
-
-### Issue 4: API Key Missing
-**Symptom:** Producers fail with "FINNHUB_API_KEY not set"
-**Fix:** Create `.env` file with `FINNHUB_API_KEY=your_key`
-
-### Issue 5: Database Connection Failed
-**Symptom:** "password authentication failed"
-**Fix:** Run `./fix_postgres.sh` or `docker-compose down -v && docker-compose up -d`
-
-## Quick Fix Commands
-
+**Fix:** Use the startup script which handles proper sequencing:
 ```bash
-# 1. Ensure all infrastructure is running
-docker-compose up -d
-
-# 2. Start all producers (in separate terminals)
-docker-compose run --rm producer python news_producer.py
-docker-compose run --rm producer python price_producer.py
-docker-compose run --rm producer python price_consumer.py
-
-# 3. Submit Flink job
-docker exec -it market_jobmanager ./bin/flink run -py /opt/flink/usrlib/flink_sentiment.py
-
-# 4. Wait 1-2 minutes for data to accumulate
-
-# 5. Check database
-docker exec market_postgres psql -U market_user -d market_mood -c "SELECT COUNT(*) FROM price_log;"
-docker exec market_postgres psql -U market_user -d market_mood -c "SELECT COUNT(*) FROM sentiment_log;"
-
-# 6. Refresh dashboard at http://localhost:8502
+docker-compose --profile producers down
+./start_data_pipeline.sh
 ```
 
-## Expected Timeline
+### Issue 2: Flink Job Not Submitted
 
-- **0-30 seconds:** Producers start fetching data → Kafka topics get messages
-- **30-60 seconds:** Price consumer writes to database → `price_log` has rows
-- **60-120 seconds:** Flink processes news → `sentiment_log` has rows
-- **2+ minutes:** Dashboard shows data
+**Symptom:** Kafka has news, but `sentiment_log` table is empty
+
+**Fix:** Submit Flink job (startup script does this automatically):
+```bash
+docker exec market_jobmanager ./bin/flink run -py /opt/flink/usrlib/flink_sentiment.py
+```
+
+### Issue 3: API Key Missing
+
+**Symptom:** Producers fail with "FINNHUB_API_KEY not set"
+
+**Fix:** 
+```bash
+# Create/edit .env file
+nano .env
+# Add: FINNHUB_API_KEY=your_actual_key_from_finnhub
+
+# Restart
+./start_data_pipeline.sh
+```
+
+### Issue 4: Wrong Container Names
+
+**Symptom:** Commands fail with "No such container: vibe_*"
+
+**Fix:** Use correct container names:
+- ✅ `market_jobmanager` (NOT `vibe_jobmanager`)
+- ✅ `market_postgres` (NOT `vibe_postgres`)  
+- ✅ `market_kafka` (NOT `vibe_kafka`)
+- ✅ Database: `market_mood` (NOT `crypto_vibes`)
+
+### Issue 5: Just Started, No Data Yet
+
+**Symptom:** Everything running but no data
+
+**Fix:** Wait 2-3 minutes for initial data collection:
+- 0-60 seconds: Producers fetch data
+- 60-120 seconds: Data processed
+- 2+ minutes: Dashboard shows data
+
+---
 
 ## Verification Queries
 
 ```sql
+-- Connect to database
+docker exec -it market_postgres psql -U market_user -d market_mood
+
 -- Check recent prices
 SELECT symbol, price, timestamp 
-FROM price_log 
+FROM stock_prices 
 ORDER BY timestamp DESC 
 LIMIT 10;
 
 -- Check recent sentiment
-SELECT symbol, headline, sentiment_score 
+SELECT symbol, headline, sentiment_score, timestamp
 FROM sentiment_log 
-ORDER BY created_at DESC 
+ORDER BY timestamp DESC 
 LIMIT 10;
 
 -- Check data counts
 SELECT 
-    (SELECT COUNT(*) FROM price_log) as price_count,
+    (SELECT COUNT(*) FROM stock_prices) as price_count,
     (SELECT COUNT(*) FROM sentiment_log) as sentiment_count;
+
+-- Exit
+\q
 ```
 
 ---
 
-**If still no data after following all steps, check:**
-1. Producer logs for errors
-2. Flink job logs for errors
-3. Database connection from producers
-4. Kafka connectivity
+## Expected Timeline
+
+- **0-30 seconds:** Producers start fetching data → Kafka topics get messages
+- **30-60 seconds:** Price consumer writes to database → `stock_prices` has rows
+- **60-120 seconds:** Flink processes news → `sentiment_log` has rows
+- **2+ minutes:** Dashboard shows data
+
+---
+
+## Related Documentation
+
+- **[TROUBLESHOOTING.md](../TROUBLESHOOTING.md)** - Master guide (35+ issues)
+- **[GETTING_STARTED.md](../GETTING_STARTED.md)** - Complete setup guide
+- **[FLINK_JOB_GUIDE.md](../FLINK_JOB_GUIDE.md)** - Flink job management
+- **[DOCKER_VS_SCRIPT_GUIDE.md](../DOCKER_VS_SCRIPT_GUIDE.md)** - Command reference
+
+---
+
+**If still no data after following all steps:**
+1. Check [TROUBLESHOOTING.md](../TROUBLESHOOTING.md) for comprehensive guide
+2. Verify producer logs for errors: `docker logs market_news_producer`
+3. Check Flink logs: `docker logs market_jobmanager`
+4. Verify connectivity: `docker network inspect market_mood_ring_market_network`
+
+---
+
+*Last Updated: February 2026*  
+*For comprehensive troubleshooting: [TROUBLESHOOTING.md](../TROUBLESHOOTING.md)*

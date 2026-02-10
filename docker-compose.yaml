@@ -154,8 +154,10 @@ services:
     networks:
       - market_network
     depends_on:
-      - kafka
-      - postgres
+      kafka:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
     profiles:
       - manual  # Keeps this out of "up" unless requested, but used for inheritance
 

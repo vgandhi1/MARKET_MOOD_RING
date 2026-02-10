@@ -1,6 +1,80 @@
-# 🚀 Setup Workflow - UV + Docker
+# 🚀 Setup Workflow
 
-## Recommended Setup Process
+**⚠️ Note:** This is an older workflow guide. For the most up-to-date setup instructions, see **[GETTING_STARTED.md](../GETTING_STARTED.md)**.
+
+---
+
+## ✅ Recommended Setup (2026 Method)
+
+**Use the automated startup script:**
+
+```bash
+# 1. Create .env file
+cp .env.example .env
+nano .env  # Add your FINNHUB_API_KEY
+
+# 2. Run the startup script
+./start_data_pipeline.sh
+```
+
+**That's it!** The script handles everything automatically.
+
+See [GETTING_STARTED.md](../GETTING_STARTED.md) for detailed instructions.
+
+---
+
+## Alternative Setup Methods
+
+### Method 1: Docker Compose with Profiles (Manual)
+
+```bash
+# 1. Setup environment variables
+cp .env.example .env
+# Edit .env and add FINNHUB_API_KEY
+
+# 2. Start all services (infrastructure + producers)
+docker-compose --profile producers up -d
+
+# 3. Wait for services to be ready (30-60 seconds)
+sleep 60
+
+# 4. Submit Flink job manually
+docker exec market_jobmanager ./bin/flink run -py /opt/flink/usrlib/flink_sentiment.py
+
+# 5. Access dashboard
+# http://localhost:8502
+```
+
+### Method 2: Local Development + Docker
+
+```bash
+# 1. Create virtual environment (optional, for local development)
+python3 -m venv .venv
+source .venv/bin/activate  # Linux/Mac
+# or: .venv\Scripts\activate  # Windows
+
+# 2. Install dependencies (optional, for local development)
+pip install -r requirements.txt
+
+# 3. Setup .env
+cp .env.example .env
+# Edit and add FINNHUB_API_KEY
+
+# 4. Start Docker containers
+docker-compose --profile producers up -d
+
+# 5. Submit Flink job
+docker exec market_jobmanager ./bin/flink run -py /opt/flink/usrlib/flink_sentiment.py
+```
+
+---
+
+## ⚠️ Original UV Workflow (Deprecated)
+
+**Note:** UV setup is no longer required. The Docker containers handle all dependencies.
+
+<details>
+<summary>Click to view original UV workflow (for reference only)</summary>
 
 ### Step 1: Create Virtual Environment with UV
 
@@ -57,86 +131,61 @@ docker-compose run --rm producer python price_producer.py
 docker-compose run --rm producer python price_consumer.py
 ```
 
----
-
-## Why This Workflow?
-
-### UV for Local Development:
-- ✅ **Fast installation** - UV is 10-100x faster than pip
-- ✅ **Local testing** - Test scripts locally before Docker
-- ✅ **IDE support** - Better autocomplete and type checking
-- ✅ **Development workflow** - Edit code, test locally, then deploy
-
-### Docker for Deployment:
-- ✅ **Consistent environment** - Same setup everywhere
-- ✅ **Isolation** - No conflicts with system Python
-- ✅ **Production ready** - Containerized deployment
-- ✅ **Service orchestration** - All services managed together
+</details>
 
 ---
 
-## Quick Setup Script
+## Why Use the Startup Script?
 
-Use the provided `setup.sh` script:
+### ✅ Advantages of `./start_data_pipeline.sh`:
+- **Automated** - All steps handled for you
+- **Validation** - Checks .env, files, Docker status
+- **Sequencing** - Waits for services to be healthy
+- **Error Handling** - Clear error messages
+- **Flink Job** - Automatically submitted
+- **Status Reporting** - Shows what's running
 
-```bash
-# Make executable
-chmod +x setup.sh
+### ⚠️ Manual Docker Compose Issues:
+- No pre-flight checks
+- Race conditions (producers before Kafka ready)
+- Manual Flink job submission required
+- No IP detection for Ollama
+- Generic error messages
 
-# Run setup
-./setup.sh
-```
-
-This will:
-1. Check if UV is installed (install if needed)
-2. Create virtual environment
-3. Install all dependencies
-4. Show next steps
+See [DOCKER_VS_SCRIPT_GUIDE.md](../DOCKER_VS_SCRIPT_GUIDE.md) for detailed comparison.
 
 ---
 
 ## Development Workflow
 
-### Local Development (UV):
+### Local Testing (Optional)
+
+If you want to test scripts locally before Docker:
+
 ```bash
-# Activate venv
+# 1. Create virtual environment
+python3 -m venv .venv
 source .venv/bin/activate
 
-# Test scripts locally (from project root with venv activated)
+# 2. Install dependencies
+pip install -r requirements.txt
+
+# 3. Test locally (requires Kafka running)
 python producer/news_producer.py
 python producer/price_producer.py
 
-# Run dashboard locally
+# 4. Run dashboard locally
 streamlit run dashboard/app.py
 ```
 
-### Docker Deployment:
+### Docker Deployment
+
 ```bash
-# Start infrastructure
-docker-compose up -d
+# Use the startup script (recommended)
+./start_data_pipeline.sh
 
-# Run producers in containers (files are mounted to /app/)
-docker-compose run --rm producer python news_producer.py
+# OR manual docker-compose (see Method 1 above)
 ```
-
----
-
-## Benefits of This Approach
-
-1. **Local Development:**
-   - Fast iteration with UV
-   - Test changes quickly
-   - Better debugging experience
-
-2. **Docker Deployment:**
-   - Consistent production environment
-   - All services orchestrated
-   - Easy scaling and management
-
-3. **Best of Both Worlds:**
-   - Develop locally with UV
-   - Deploy with Docker
-   - Same dependencies in both
 
 ---
 
@@ -144,25 +193,48 @@ docker-compose run --rm producer python news_producer.py
 
 ```
 Market_Mood_Ring/
-├── .venv/                    # UV virtual environment (created)
-│   └── lib/python3.9/site-packages/  # Installed packages
-├── .env                      # Environment variables (create this)
+├── .env                      # Your environment variables (created)
+├── .env.example              # Template
 ├── requirements.txt          # Python dependencies
-├── setup.sh                  # Setup script
-└── ...
+├── start_data_pipeline.sh    # ⭐ Startup script (use this!)
+├── docker-compose.yaml       # Docker orchestration
+│
+├── producer/                 # Data ingestion
+│   ├── news_producer.py
+│   ├── price_producer.py
+│   ├── price_consumer.py
+│   └── rag_ingest.py
+│
+├── flink_jobs/               # Stream processing
+│   └── flink_sentiment.py
+│
+├── dashboard/                # UI
+│   └── app.py
+│
+└── docs/                     # Documentation
+    ├── GETTING_STARTED.md    # ⭐ Modern guide
+    └── ...
 ```
 
 ---
 
 ## Summary
 
-**Workflow:**
-1. ✅ Create venv with UV
-2. ✅ Install requirements.txt with UV
-3. ✅ Setup .env file
-4. ✅ Run docker-compose
+**Recommended Approach (2026):**
+1. ✅ Create `.env` with FINNHUB_API_KEY
+2. ✅ Run `./start_data_pipeline.sh`
+3. ✅ Access dashboard at http://localhost:8502
 
 **Benefits:**
-- Fast local development
-- Consistent Docker deployment
-- Best practices for Python projects
+- ✅ Fast setup (2-3 minutes)
+- ✅ Automated validation
+- ✅ Proper service sequencing
+- ✅ Clear status reporting
+
+**For detailed walkthrough:** [GETTING_STARTED.md](../GETTING_STARTED.md)  
+**For troubleshooting:** [TROUBLESHOOTING.md](../TROUBLESHOOTING.md)
+
+---
+
+*Last Updated: February 2026*  
+*Status: Modernized with startup script*

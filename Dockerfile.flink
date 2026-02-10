@@ -29,8 +29,14 @@ RUN wget -q -O /opt/flink/lib/flink-connector-jdbc-3.1.1-1.17.jar \
 # Set proper ownership
 RUN chown -R flink:flink /opt/flink/lib/
 
-# Download NLTK data (Vader lexicon)
-RUN python3 -c "import nltk; nltk.download('vader_lexicon'); nltk.download('punkt')"
+# Download NLTK data (Vader lexicon) to the proper location
+# NLTK searches /opt/flink/nltk_data first, so we use that
+RUN mkdir -p /opt/flink/nltk_data && \
+    python3 -c "import nltk; nltk.download('vader_lexicon', download_dir='/opt/flink/nltk_data'); nltk.download('punkt', download_dir='/opt/flink/nltk_data')" && \
+    chown -R flink:flink /opt/flink/nltk_data
+
+# Set NLTK data path for runtime
+ENV NLTK_DATA=/opt/flink/nltk_data
 
 # Copy Flink job
 COPY flink_jobs/flink_sentiment.py /opt/flink/usrlib/flink_sentiment.py
