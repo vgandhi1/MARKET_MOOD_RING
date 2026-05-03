@@ -1,0 +1,1512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Market Mood Ring — Leadership Review</title>
+<style>
+  :root {
+    --bg-dark: #e0f2fe;
+    --bg-card: #ffffff;
+    --bg-card2: #bae6fd;
+    --accent-blue: #0369a1;
+    --accent-cyan: #0891b2;
+    --accent-green: #059669;
+    --accent-yellow: #d97706;
+    --accent-red: #dc2626;
+    --accent-purple: #7c3aed;
+    --text-primary: #0f172a;
+    --text-secondary: #334155;
+    --text-muted: #64748b;
+    --border: #7dd3fc;
+    --glow-blue: rgba(3,105,161,0.12);
+    --glow-green: rgba(5,150,105,0.12);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg-dark);
+    color: var(--text-primary);
+    height: 100vh;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  /* ─── Slide container ─────────────────────────────── */
+  #deck {
+    width: 100vw;
+    height: 100vh;
+    position: relative;
+  }
+
+  .slide {
+    position: absolute;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+    padding: 48px 60px 36px;
+    opacity: 0;
+    transition: opacity 0.35s ease;
+    overflow: hidden;
+  }
+  .slide.active {
+    display: flex;
+    opacity: 1;
+  }
+  .slide.fade-in { animation: fadeIn 0.4s ease forwards; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ─── Nav bar ─────────────────────────────────────── */
+  #nav {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(224,242,254,0.92);
+    border: 1px solid var(--border);
+    border-radius: 40px;
+    padding: 8px 20px;
+    z-index: 100;
+    backdrop-filter: blur(10px);
+  }
+  #nav button {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    border-radius: 20px;
+    padding: 6px 18px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s;
+  }
+  #nav button:hover { background: var(--accent-blue); color: #fff; border-color: var(--accent-blue); }
+  #slide-counter { font-size: 13px; color: var(--text-muted); min-width: 60px; text-align: center; }
+
+  /* ─── Dot navigation ──────────────────────────────── */
+  #dots {
+    position: fixed;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 100;
+  }
+  .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .dot.active { background: var(--accent-blue); transform: scale(1.4); }
+
+  /* ─── Shared layout helpers ───────────────────────── */
+  .slide-header {
+    margin-bottom: 32px;
+  }
+  .slide-label {
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent-cyan);
+    margin-bottom: 6px;
+    font-weight: 600;
+  }
+  h1 { font-size: 42px; font-weight: 800; line-height: 1.15; }
+  h2 { font-size: 32px; font-weight: 700; }
+  h3 { font-size: 18px; font-weight: 600; color: var(--accent-blue); margin-bottom: 8px; }
+  h4 { font-size: 14px; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px; }
+
+  .sub { color: var(--text-secondary); font-size: 17px; margin-top: 8px; line-height: 1.6; }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; }
+  .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 16px; }
+
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .card.accent-blue  { border-left: 3px solid var(--accent-blue); }
+  .card.accent-green { border-left: 3px solid var(--accent-green); }
+  .card.accent-yellow { border-left: 3px solid var(--accent-yellow); }
+  .card.accent-red   { border-left: 3px solid var(--accent-red); }
+  .card.accent-purple { border-left: 3px solid var(--accent-purple); }
+  .card.accent-cyan  { border-left: 3px solid var(--accent-cyan); }
+
+  .pill {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+  .pill-blue   { background: rgba(3,105,161,0.12);  color: #0369a1; }
+  .pill-green  { background: rgba(5,150,105,0.12);  color: #059669; }
+  .pill-yellow { background: rgba(217,119,6,0.12);  color: #d97706; }
+  .pill-red    { background: rgba(220,38,38,0.12);  color: #dc2626; }
+  .pill-purple { background: rgba(124,58,237,0.12); color: #7c3aed; }
+  .pill-cyan   { background: rgba(8,145,178,0.12);  color: #0891b2; }
+
+  ul.check { list-style: none; padding: 0; }
+  ul.check li { padding: 5px 0; font-size: 14px; color: var(--text-secondary); }
+  ul.check li::before { content: "✓  "; color: var(--accent-green); font-weight: 700; }
+
+  ul.bullet { list-style: none; padding: 0; }
+  ul.bullet li { padding: 5px 0; font-size: 14px; color: var(--text-secondary); }
+  ul.bullet li::before { content: "→  "; color: var(--accent-blue); }
+
+  .stat-number { font-size: 36px; font-weight: 800; line-height: 1; }
+  .stat-label  { font-size: 12px; color: var(--text-muted); margin-top: 4px; letter-spacing: 0.5px; }
+
+  /* ─── Gradient accent headings ────────────────────── */
+  .grad-text {
+    background: linear-gradient(90deg, var(--accent-blue), var(--accent-cyan));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .grad-green {
+    background: linear-gradient(90deg, var(--accent-green), #34d399);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* ─── Timeline / roadmap ──────────────────────────── */
+  .timeline { display: flex; gap: 0; }
+  .tl-item { flex: 1; position: relative; }
+  .tl-item:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    top: 18px;
+    right: 0;
+    width: 100%;
+    height: 2px;
+    background: var(--border);
+    z-index: 0;
+  }
+  .tl-dot {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 14px;
+    margin-bottom: 12px;
+    position: relative; z-index: 1;
+  }
+
+  /* ─── Architecture flow ───────────────────────────── */
+  .flow-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+  .flow-box {
+    background: var(--bg-card2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .flow-arrow { color: var(--text-muted); font-size: 18px; }
+
+  /* ─── Risk matrix ─────────────────────────────────── */
+  .risk-row {
+    display: grid;
+    grid-template-columns: 130px 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 12px;
+    align-items: start;
+  }
+  .risk-badge {
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    text-align: center;
+  }
+
+  /* ─── SLIDE 1: Title ──────────────────────────────── */
+  #s1 {
+    justify-content: center;
+    align-items: flex-start;
+    background:
+      radial-gradient(ellipse 70% 60% at 80% 40%, rgba(3,105,161,0.18) 0%, transparent 70%),
+      radial-gradient(ellipse 50% 50% at 20% 80%, rgba(8,145,178,0.12) 0%, transparent 60%),
+      var(--bg-dark);
+  }
+  .title-tag {
+    display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;
+  }
+  .ticker-strip {
+    position: absolute;
+    bottom: 70px; right: 60px;
+    display: flex; gap: 16px;
+  }
+  .ticker-chip {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 14px;
+    text-align: center;
+  }
+  .ticker-sym { font-size: 13px; font-weight: 700; color: var(--text-primary); }
+  .ticker-val { font-size: 11px; }
+
+  /* ─── Scrollable body for dense slides ────────────── */
+  .slide-body { flex: 1; overflow-y: auto; padding-right: 4px; }
+  .slide-body::-webkit-scrollbar { width: 4px; }
+  .slide-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<div id="deck">
+
+  <!-- ════════════════════════════════════════
+       SLIDE 1 — TITLE
+  ════════════════════════════════════════ -->
+  <div class="slide active fade-in" id="s1">
+    <div style="max-width:680px; margin-top: 40px;">
+      <div class="title-tag">
+        <span class="pill pill-blue">Leadership Review</span>
+        <span class="pill pill-cyan">May 2026</span>
+        <span class="pill pill-green">Production-Ready</span>
+      </div>
+      <div style="font-size:13px; letter-spacing:3px; text-transform:uppercase; color:var(--accent-cyan); margin-bottom:14px; font-weight:600;">Real-Time Financial Intelligence</div>
+      <h1 style="font-size:56px; line-height:1.1;">
+        <span class="grad-text">Market</span><br>
+        <span style="color:var(--text-primary);">Mood Ring</span>
+      </h1>
+      <p class="sub" style="max-width:520px; margin-top:20px; font-size:18px;">
+        Streaming market sentiment at scale — real-time news ingestion, AI-powered analysis, and conversational market intelligence powered by Kafka, Flink, and Llama 3.
+      </p>
+      <div style="margin-top:36px; display:flex; gap:32px;">
+        <div>
+          <div class="stat-number grad-text">30</div>
+          <div class="stat-label">STOCKS TRACKED</div>
+        </div>
+        <div>
+          <div class="stat-number" style="color:var(--accent-green);">72h</div>
+          <div class="stat-label">DATA WINDOW</div>
+        </div>
+        <div>
+          <div class="stat-number" style="color:var(--accent-yellow);">60s</div>
+          <div class="stat-label">UPDATE INTERVAL</div>
+        </div>
+        <div>
+          <div class="stat-number" style="color:var(--accent-purple);">RAG</div>
+          <div class="stat-label">AI ANALYST</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ticker-strip">
+      <div class="ticker-chip">
+        <div class="ticker-sym">AAPL</div>
+        <div class="ticker-val" style="color:var(--accent-green);">▲ 0.82%</div>
+      </div>
+      <div class="ticker-chip">
+        <div class="ticker-sym">NVDA</div>
+        <div class="ticker-val" style="color:var(--accent-green);">▲ 2.14%</div>
+      </div>
+      <div class="ticker-chip">
+        <div class="ticker-sym">TSLA</div>
+        <div class="ticker-val" style="color:var(--accent-red);">▼ 1.37%</div>
+      </div>
+      <div class="ticker-chip">
+        <div class="ticker-sym">MSFT</div>
+        <div class="ticker-val" style="color:var(--accent-green);">▲ 0.44%</div>
+      </div>
+      <div class="ticker-chip">
+        <div class="ticker-sym">GOOGL</div>
+        <div class="ticker-val" style="color:var(--accent-green);">▲ 1.05%</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════
+       SLIDE 2 — EXECUTIVE SUMMARY
+  ════════════════════════════════════════ -->
+  <div class="slide" id="s2">
+    <div class="slide-header">
+      <div class="slide-label">01 — Executive Summary</div>
+      <h2>What is <span class="grad-text">Market Mood Ring?</span></h2>
+    </div>
+    <div class="grid-2" style="flex:1;">
+      <div style="display:flex; flex-direction:column; gap:16px;">
+        <div class="card accent-blue">
+          <h3>The Core Idea</h3>
+          <p style="font-size:14px; color:var(--text-secondary); line-height:1.6;">
+            Convert noisy, high-velocity market signals — breaking news, price ticks — into clear, actionable narrative for non-quant users. Answer the question <em style="color:var(--text-primary);">"Why is this stock moving right now?"</em> in plain English.
+          </p>
+        </div>
+        <div class="card accent-green">
+          <h3>Current State</h3>
+          <ul class="check">
+            <li>End-to-end ingestion → sentiment → AI live and operational</li>
+            <li>Dockerized, single-command startup</li>
+            <li>72-hour charting + real-time sentiment table</li>
+            <li>RAG-backed AI Analyst (Llama 3) grounded in live news</li>
+            <li>High documentation maturity — 34+ guides</li>
+          </ul>
+        </div>
+        <div class="card accent-yellow">
+          <h3>Next Quarter Priority</h3>
+          <ul class="bullet">
+            <li>Reliability / SLO baselines</li>
+            <li>Automated test coverage</li>
+            <li>Security & compliance hardening</li>
+          </ul>
+        </div>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:16px;">
+        <div style="background:var(--bg-card); border:1px solid var(--border); border-radius:12px; padding:24px; display:flex; flex-direction:column; gap:20px;">
+          <div style="font-size:12px; letter-spacing:1px; text-transform:uppercase; color:var(--text-muted);">Platform Snapshot</div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+            <div style="text-align:center; padding:16px; background:var(--bg-card2); border-radius:10px;">
+              <div class="stat-number" style="color:var(--accent-blue);">5</div>
+              <div class="stat-label">MICROSERVICES</div>
+            </div>
+            <div style="text-align:center; padding:16px; background:var(--bg-card2); border-radius:10px;">
+              <div class="stat-number" style="color:var(--accent-cyan);">3</div>
+              <div class="stat-label">DB TABLES</div>
+            </div>
+            <div style="text-align:center; padding:16px; background:var(--bg-card2); border-radius:10px;">
+              <div class="stat-number" style="color:var(--accent-green);">2</div>
+              <div class="stat-label">KAFKA TOPICS</div>
+            </div>
+            <div style="text-align:center; padding:16px; background:var(--bg-card2); border-radius:10px;">
+              <div class="stat-number" style="color:var(--accent-yellow);">8B</div>
+              <div class="stat-label">LLM PARAMS</div>
+            </div>
+          </div>
+          <div style="padding-top:4px;">
+            <div style="font-size:12px; color:var(--text-muted); margin-bottom:10px;">Delivery Status</div>
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+              <span style="font-size:13px; color:var(--text-secondary);">Flink Sentiment Stream</span>
+              <span class="pill pill-green">LIVE</span>
+            </div>
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+              <span style="font-size:13px; color:var(--text-secondary);">RAG / AI Analyst</span>
+              <span class="pill pill-green">LIVE</span>
+            </div>
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+              <span style="font-size:13px; color:var(--text-secondary);">Automated Test Suite</span>
+              <span class="pill pill-yellow">IN PROGRESS</span>
+            </div>
+            <div style="display:flex; align-items:center; justify-content:space-between;">
+              <span style="font-size:13px; color:var(--text-secondary);">Enterprise Secrets Mgmt</span>
+              <span class="pill pill-red">ROADMAP</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════
+       SLIDE 3 — PROBLEM & USE CASES
+  ════════════════════════════════════════ -->
+  <div class="slide" id="s3">
+    <div class="slide-header">
+      <div class="slide-label">02 — Problem & Vision</div>
+      <h2>The Problem We <span class="grad-text">Solve</span></h2>
+    </div>
+    <div class="grid-2" style="gap:24px; flex:1;">
+      <div>
+        <div style="background:rgba(239,68,68,0.06); border:1px solid rgba(239,68,68,0.2); border-radius:12px; padding:24px; margin-bottom:20px;">
+          <div style="font-size:28px; margin-bottom:12px;">😵</div>
+          <h3 style="color:var(--accent-red);">The Pain</h3>
+          <ul class="bullet" style="margin-top:8px;">
+            <li style="color:var(--text-secondary);">Market data is noisy — headlines arrive in bursts</li>
+            <li style="color:var(--text-secondary);">Price moves are visible but reasons are buried in articles</li>
+            <li style="color:var(--text-secondary);">Non-quant teams can't translate data into decisions quickly</li>
+            <li style="color:var(--text-secondary);">Latency between event and insight is too high</li>
+          </ul>
+        </div>
+        <div style="background:rgba(16,185,129,0.06); border:1px solid rgba(16,185,129,0.2); border-radius:12px; padding:24px;">
+          <div style="font-size:28px; margin-bottom:12px;">✅</div>
+          <h3 style="color:var(--accent-green);">Our Solution</h3>
+          <p style="font-size:14px; color:var(--text-secondary); line-height:1.6;">
+            Market Mood Ring ingests news and prices continuously, scores sentiment in a live Flink stream, stores vector embeddings for semantic retrieval, and surfaces a conversational AI interface grounded in <em style="color:var(--text-primary);">today's actual market events.</em>
+          </p>
+        </div>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:14px;">
+        <div style="font-size:12px; letter-spacing:1px; text-transform:uppercase; color:var(--text-muted); margin-bottom:4px;">Primary Use Cases</div>
+        <div class="card accent-blue" style="display:flex; gap:16px; align-items:flex-start;">
+          <div style="font-size:28px;">📰</div>
+          <div>
+            <h4 style="color:var(--text-primary);">Explain Why a Stock is Moving</h4>
+            <p style="font-size:13px; color:var(--text-secondary);">Real-time headline sentiment correlated to price movement, surfaced without reading every article.</p>
+          </div>
+        </div>
+        <div class="card accent-cyan" style="display:flex; gap:16px; align-items:flex-start;">
+          <div style="font-size:28px;">📊</div>
+          <div>
+            <h4 style="color:var(--text-primary);">Live Price & Sentiment Monitoring</h4>
+            <p style="font-size:13px; color:var(--text-secondary);">72-hour interactive charts and top-20 sentiment feed across 30 stocks in a single dashboard.</p>
+          </div>
+        </div>
+        <div class="card accent-purple" style="display:flex; gap:16px; align-items:flex-start;">
+          <div style="font-size:28px;">🤖</div>
+          <div>
+            <h4 style="color:var(--text-primary);">Conversational AI Analyst</h4>
+            <p style="font-size:13px; color:var(--text-secondary);">Ask "What's happening with NVDA today?" — the AI answers using only ingested, verified news context via RAG.</p>
+          </div>
+        </div>
+        <div class="card accent-green" style="display:flex; gap:16px; align-items:flex-start;">
+          <div style="font-size:28px;">🎯</div>
+          <div>
+            <h4 style="color:var(--text-primary);">Rapid Decision Support</h4>
+            <p style="font-size:13px; color:var(--text-secondary);">Reduces interpretation latency from minutes of manual reading to seconds of AI synthesis.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════
+       SLIDE 4 — SYSTEM ARCHITECTURE
+  ════════════════════════════════════════ -->
+  <div class="slide" id="s4">
+    <div class="slide-header">
+      <div class="slide-label">03 — Architecture</div>
+      <h2>System <span class="grad-text">Architecture</span></h2>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; gap:14px;">
+      <!-- Layer 1: Ingestion -->
+      <div style="background:var(--bg-card); border:1px solid var(--border); border-radius:10px; padding:16px 20px;">
+        <div style="font-size:11px; letter-spacing:1.5px; text-transform:uppercase; color:var(--accent-cyan); margin-bottom:10px; font-weight:600;">① Ingestion Layer — Finnhub API (60s polling)</div>
+        <div class="flow-row">
+          <div class="flow-box" style="border-color:var(--accent-cyan);">📡 Finnhub API</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-box">news_producer.py</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-box" style="border-color:var(--accent-blue);">Kafka: stock_news</div>
+          <div style="flex:1;"></div>
+          <div class="flow-box">price_producer.py</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-box" style="border-color:var(--accent-blue);">Kafka: stock_prices</div>
+        </div>
+      </div>
+      <!-- Layer 2: Processing -->
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+        <div style="background:var(--bg-card); border:1px solid var(--border); border-radius:10px; padding:16px 20px; border-left:3px solid var(--accent-purple);">
+          <div style="font-size:11px; letter-spacing:1.5px; text-transform:uppercase; color:var(--accent-purple); margin-bottom:10px; font-weight:600;">② Stream Processing — Apache Flink</div>
+          <div class="flow-row">
+            <div class="flow-box">Kafka: stock_news</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-box" style="border-color:var(--accent-purple);">flink_sentiment.py</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-box">NLTK VADER</div>
+          </div>
+          <div style="font-size:12px; color:var(--text-muted); margin-top:6px;">Output: compound score −1.0 → +1.0 per headline</div>
+        </div>
+        <div style="background:var(--bg-card); border:1px solid var(--border); border-radius:10px; padding:16px 20px; border-left:3px solid var(--accent-yellow);">
+          <div style="font-size:11px; letter-spacing:1.5px; text-transform:uppercase; color:var(--accent-yellow); margin-bottom:10px; font-weight:600;">② Embedding Pipeline — RAG Ingest</div>
+          <div class="flow-row">
+            <div class="flow-box">Kafka: stock_news</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-box" style="border-color:var(--accent-yellow);">rag_ingest.py</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-box">MiniLM-L6 384d</div>
+          </div>
+          <div style="font-size:12px; color:var(--text-muted); margin-top:6px;">Vectors stored in pgvector for semantic retrieval</div>
+        </div>
+      </div>
+      <!-- Layer 3: Storage -->
+      <div style="background:var(--bg-card); border:1px solid var(--border); border-radius:10px; padding:16px 20px; border-left:3px solid var(--accent-green);">
+        <div style="font-size:11px; letter-spacing:1.5px; text-transform:uppercase; color:var(--accent-green); margin-bottom:10px; font-weight:600;">③ Storage Layer — PostgreSQL + pgvector</div>
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;">
+          <div style="background:var(--bg-card2); border-radius:8px; padding:12px;">
+            <div style="font-size:13px; font-weight:600; color:var(--text-primary);">price_log</div>
+            <div style="font-size:11px; color:var(--text-muted); margin-top:3px;">symbol, price, timestamp</div>
+            <div style="font-size:11px; color:var(--accent-green); margin-top:3px;">← price_consumer.py</div>
+          </div>
+          <div style="background:var(--bg-card2); border-radius:8px; padding:12px;">
+            <div style="font-size:13px; font-weight:600; color:var(--text-primary);">sentiment_log</div>
+            <div style="font-size:11px; color:var(--text-muted); margin-top:3px;">symbol, headline, score</div>
+            <div style="font-size:11px; color:var(--accent-purple); margin-top:3px;">← Flink JDBC sink</div>
+          </div>
+          <div style="background:var(--bg-card2); border-radius:8px; padding:12px;">
+            <div style="font-size:13px; font-weight:600; color:var(--text-primary);">financial_knowledge</div>
+            <div style="font-size:11px; color:var(--text-muted); margin-top:3px;">content, embedding vector(384)</div>
+            <div style="font-size:11px; color:var(--accent-yellow); margin-top:3px;">← rag_ingest.py (ivfflat)</div>
+          </div>
+        </div>
+      </div>
+      <!-- Layer 4: Presentation -->
+      <div style="background:var(--bg-card); border:1px solid var(--border); border-radius:10px; padding:16px 20px; border-left:3px solid var(--accent-blue);">
+        <div style="font-size:11px; letter-spacing:1.5px; text-transform:uppercase; color:var(--accent-blue); margin-bottom:10px; font-weight:600;">④ Presentation Layer — Streamlit + Ollama Llama 3</div>
+        <div class="flow-row">
+          <div class="flow-box" style="border-color:var(--accent-blue);">Streamlit :8502</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-box">Live Dashboard (price + sentiment)</div>
+          <div style="flex:1;"></div>
+          <div class="flow-box" style="border-color:var(--accent-purple);">AI Analyst Chat</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-box">pgvector search</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-box" style="border-color:var(--accent-yellow);">Ollama Llama3 (GPU)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════
+       SLIDE 5 — TECH STACK
+  ════════════════════════════════════════ -->
+  <div class="slide" id="s5">
+    <div class="slide-header">
+      <div class="slide-label">04 — Technology</div>
+      <h2>Tech Stack <span class="grad-text">Deep Dive</span></h2>
+    </div>
+    <div class="grid-3" style="flex:1; align-content:start; gap:16px;">
+      <div class="card accent-blue">
+        <div style="font-size:24px; margin-bottom:8px;">📨</div>
+        <h3>Apache Kafka 7.6</h3>
+        <ul class="check" style="margin-top:8px;">
+          <li>KRaft mode — no Zookeeper</li>
+          <li>2 topics: stock_news, stock_prices</li>
+          <li>Docker bridge (port 9092/29092)</li>
+          <li>Confluent Platform image</li>
+        </ul>
+      </div>
+      <div class="card accent-purple">
+        <div style="font-size:24px; margin-bottom:8px;">⚡</div>
+        <h3>Apache Flink 1.17</h3>
+        <ul class="check" style="margin-top:8px;">
+          <li>PyFlink streaming API</li>
+          <li>NLTK VADER UDF in stream</li>
+          <li>JDBC sink → PostgreSQL</li>
+          <li>JobManager + TaskManager</li>
+        </ul>
+      </div>
+      <div class="card accent-green">
+        <div style="font-size:24px; margin-bottom:8px;">🐘</div>
+        <h3>PostgreSQL 14 + pgvector</h3>
+        <ul class="check" style="margin-top:8px;">
+          <li>3 tables — price, sentiment, knowledge</li>
+          <li>384-dim vector embeddings</li>
+          <li>IVFFlat cosine similarity index</li>
+          <li>Indexed for 72h rolling queries</li>
+        </ul>
+      </div>
+      <div class="card accent-cyan">
+        <div style="font-size:24px; margin-bottom:8px;">🐍</div>
+        <h3>Python Producers</h3>
+        <ul class="check" style="margin-top:8px;">
+          <li>news_producer — Finnhub API poll</li>
+          <li>price_producer — quote endpoint</li>
+          <li>price_consumer — Kafka → Postgres</li>
+          <li>rag_ingest — news → embeddings</li>
+        </ul>
+      </div>
+      <div class="card accent-yellow">
+        <div style="font-size:24px; margin-bottom:8px;">🦙</div>
+        <h3>Ollama + Llama 3 (8B)</h3>
+        <ul class="check" style="margin-top:8px;">
+          <li>Runs on Windows host (GPU)</li>
+          <li>Docker → host.docker.internal:11434</li>
+          <li>RAG grounded prompts only</li>
+          <li>Streaming disabled for reliability</li>
+        </ul>
+      </div>
+      <div class="card accent-blue">
+        <div style="font-size:24px; margin-bottom:8px;">📊</div>
+        <h3>Streamlit Dashboard</h3>
+        <ul class="check" style="margin-top:8px;">
+          <li>Port 8502 — live charts (Plotly)</li>
+          <li>SentenceTransformer MiniLM-L6-v2</li>
+          <li>Cached DB connection + model</li>
+          <li>2 pages: Dashboard + AI Analyst</li>
+        </ul>
+      </div>
+      <div class="card" style="border-left:3px solid var(--accent-red);">
+        <div style="font-size:24px; margin-bottom:8px;">🐳</div>
+        <h3 style="color:var(--accent-red);">Docker Compose</h3>
+        <ul class="check" style="margin-top:8px;">
+          <li>Single-command stack startup</li>
+          <li>Profile: --profile producers</li>
+          <li>market_network bridge DNS</li>
+          <li>Health checks on all services</li>
+        </ul>
+      </div>
+      <div class="card" style="border-left:3px solid var(--text-muted);">
+        <div style="font-size:24px; margin-bottom:8px;">📡</div>
+        <h3 style="color:var(--text-secondary);">Finnhub API</h3>
+        <ul class="check" style="margin-top:8px;">
+          <li>company-news endpoint (news)</li>
+          <li>quote endpoint (prices)</li>
+          <li>30 tickers via tickers.json</li>
+          <li>Rate-limited: 60 calls/min</li>
+        </ul>
+      </div>
+      <div class="card" style="border-left:3px solid var(--accent-green);">
+        <div style="font-size:24px; margin-bottom:8px;">🔬</div>
+        <h3 style="color:var(--accent-green);">NLTK VADER</h3>
+        <ul class="check" style="margin-top:8px;">
+          <li>Valence Aware Dictionary</li>
+          <li>Compound score: −1.0 → +1.0</li>
+          <li>Pre-downloaded in Flink image</li>
+          <li>Runs as PyFlink UDF in cluster</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════
+       SLIDE 6 — DATA FLOW
+  ════════════════════════════════════════ -->
+  <div class="slide" id="s6">
+    <div class="slide-header">
+      <div class="slide-label">05 — Data Flow</div>
+      <h2>End-to-End <span class="grad-text">Data Flow</span></h2>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; justify-content:space-around; gap:16px;">
+      <!-- News cycle -->
+      <div>
+        <div style="font-size:12px; letter-spacing:1px; text-transform:uppercase; color:var(--accent-cyan); font-weight:600; margin-bottom:10px;">News Ingestion Cycle — Every 60 seconds</div>
+        <div style="display:flex; align-items:stretch; gap:6px;">
+          <div style="background:rgba(6,182,212,0.1); border:1px solid var(--accent-cyan); border-radius:8px; padding:12px 16px; text-align:center; min-width:120px;">
+            <div style="font-size:18px;">📡</div>
+            <div style="font-size:12px; font-weight:600; color:var(--accent-cyan);">Finnhub API</div>
+            <div style="font-size:11px; color:var(--text-muted);">company-news</div>
+          </div>
+          <div style="display:flex; align-items:center; color:var(--text-muted); font-size:20px; padding:0 4px;">→</div>
+          <div style="background:var(--bg-card2); border:1px solid var(--border); border-radius:8px; padding:12px 16px; text-align:center; min-width:120px;">
+            <div style="font-size:18px;">⚙️</div>
+            <div style="font-size:12px; font-weight:600;">news_producer.py</div>
+            <div style="font-size:11px; color:var(--text-muted);">dedup + publish</div>
+          </div>
+          <div style="display:flex; align-items:center; color:var(--text-muted); font-size:20px; padding:0 4px;">→</div>
+          <div style="background:rgba(59,130,246,0.1); border:1px solid var(--accent-blue); border-radius:8px; padding:12px 16px; text-align:center; min-width:130px;">
+            <div style="font-size:18px;">📨</div>
+            <div style="font-size:12px; font-weight:600; color:var(--accent-blue);">Kafka: stock_news</div>
+          </div>
+          <div style="display:flex; align-items:center; color:var(--text-muted); font-size:20px; padding:0 4px;">→</div>
+          <div style="display:flex; flex-direction:column; gap:8px; flex:1;">
+            <div style="background:rgba(139,92,246,0.1); border:1px solid var(--accent-purple); border-radius:8px; padding:10px 14px; display:flex; align-items:center; gap:10px;">
+              <span style="font-size:16px;">⚡</span>
+              <div>
+                <div style="font-size:12px; font-weight:600; color:var(--accent-purple);">Flink → NLTK VADER → sentiment_log</div>
+                <div style="font-size:11px; color:var(--text-muted);">compound score per headline, stream insert</div>
+              </div>
+            </div>
+            <div style="background:rgba(245,158,11,0.1); border:1px solid var(--accent-yellow); border-radius:8px; padding:10px 14px; display:flex; align-items:center; gap:10px;">
+              <span style="font-size:16px;">🧠</span>
+              <div>
+                <div style="font-size:12px; font-weight:600; color:var(--accent-yellow);">rag_ingest → MiniLM-L6 → financial_knowledge</div>
+                <div style="font-size:11px; color:var(--text-muted);">384-dim vector, IVFFlat cosine index</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Price cycle -->
+      <div>
+        <div style="font-size:12px; letter-spacing:1px; text-transform:uppercase; color:var(--accent-green); font-weight:600; margin-bottom:10px;">Price Ingestion Cycle — Every 60 seconds</div>
+        <div style="display:flex; align-items:center; gap:6px;">
+          <div style="background:rgba(16,185,129,0.1); border:1px solid var(--accent-green); border-radius:8px; padding:12px 16px; text-align:center; min-width:120px;">
+            <div style="font-size:18px;">💹</div>
+            <div style="font-size:12px; font-weight:600; color:var(--accent-green);">Finnhub API</div>
+            <div style="font-size:11px; color:var(--text-muted);">quote endpoint</div>
+          </div>
+          <div style="color:var(--text-muted); font-size:20px; padding:0 4px;">→</div>
+          <div style="background:var(--bg-card2); border:1px solid var(--border); border-radius:8px; padding:12px 16px; text-align:center; min-width:120px;">
+            <div style="font-size:18px;">⚙️</div>
+            <div style="font-size:12px; font-weight:600;">price_producer.py</div>
+          </div>
+          <div style="color:var(--text-muted); font-size:20px; padding:0 4px;">→</div>
+          <div style="background:rgba(59,130,246,0.1); border:1px solid var(--accent-blue); border-radius:8px; padding:12px 16px; text-align:center; min-width:130px;">
+            <div style="font-size:18px;">📨</div>
+            <div style="font-size:12px; font-weight:600; color:var(--accent-blue);">Kafka: stock_prices</div>
+          </div>
+          <div style="color:var(--text-muted); font-size:20px; padding:0 4px;">→</div>
+          <div style="background:var(--bg-card2); border:1px solid var(--border); border-radius:8px; padding:12px 16px; text-align:center; min-width:120px;">
+            <div style="font-size:12px; font-weight:600;">price_consumer.py</div>
+          </div>
+          <div style="color:var(--text-muted); font-size:20px; padding:0 4px;">→</div>
+          <div style="background:rgba(16,185,129,0.1); border:1px solid var(--accent-green); border-radius:8px; padding:12px 16px; text-align:center;">
+            <div style="font-size:12px; font-weight:600; color:var(--accent-green);">PostgreSQL: price_log</div>
+            <div style="font-size:11px; color:var(--text-muted);">72-hour history</div>
+          </div>
+        </div>
+      </div>
+      <!-- User query -->
+      <div>
+        <div style="font-size:12px; letter-spacing:1px; text-transform:uppercase; color:var(--accent-blue); font-weight:600; margin-bottom:10px;">User Query — Real-Time AI Response</div>
+        <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+          <div style="background:rgba(59,130,246,0.1); border:1px solid var(--accent-blue); border-radius:8px; padding:12px 16px; text-align:center;">
+            <div style="font-size:18px;">💬</div>
+            <div style="font-size:12px; font-weight:600; color:var(--accent-blue);">User Question</div>
+          </div>
+          <div style="color:var(--text-muted); font-size:20px;">→</div>
+          <div style="background:var(--bg-card2); border-radius:8px; padding:12px 16px; font-size:12px; font-weight:600;">Embed (MiniLM)</div>
+          <div style="color:var(--text-muted); font-size:20px;">→</div>
+          <div style="background:var(--bg-card2); border-radius:8px; padding:12px 16px; font-size:12px; font-weight:600;">pgvector search (top 3)</div>
+          <div style="color:var(--text-muted); font-size:20px;">→</div>
+          <div style="background:var(--bg-card2); border-radius:8px; padding:12px 16px; font-size:12px; font-weight:600;">Build RAG prompt</div>
+          <div style="color:var(--text-muted); font-size:20px;">→</div>
+          <div style="background:rgba(245,158,11,0.1); border:1px solid var(--accent-yellow); border-radius:8px; padding:12px 16px; font-size:12px; font-weight:600; color:var(--accent-yellow);">Llama 3 (GPU)</div>
+          <div style="color:var(--text-muted); font-size:20px;">→</div>
+          <div style="background:rgba(16,185,129,0.1); border:1px solid var(--accent-green); border-radius:8px; padding:12px 16px; font-size:12px; font-weight:600; color:var(--accent-green);">🐻 Bearish / 🐂 Bullish Response</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════
+       SLIDE 7 — LIVE CAPABILITIES
+  ════════════════════════════════════════ -->
+  <div class="slide" id="s7">
+    <div class="slide-header">
+      <div class="slide-label">06 — Capabilities</div>
+      <h2>What's <span class="grad-text">Live Today</span></h2>
+    </div>
+    <div class="grid-2" style="flex:1; gap:20px;">
+      <div style="display:flex; flex-direction:column; gap:14px;">
+        <div class="card accent-blue">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <h3>Real-Time Kafka Transport</h3>
+            <span class="pill pill-green">LIVE</span>
+          </div>
+          <p style="font-size:13px; color:var(--text-secondary);">KRaft-mode Kafka with no Zookeeper dependency. Dual-topic design separates news and price streams for independent consumer scaling.</p>
+        </div>
+        <div class="card accent-purple">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <h3>Flink Streaming Sentiment</h3>
+            <span class="pill pill-green">LIVE</span>
+          </div>
+          <p style="font-size:13px; color:var(--text-secondary);">NLTK VADER runs as a PyFlink UDF inside the Flink cluster. Headlines scored continuously at latest-offset — no batch delay.</p>
+        </div>
+        <div class="card accent-green">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <h3>72-Hour Dashboard</h3>
+            <span class="pill pill-green">LIVE</span>
+          </div>
+          <p style="font-size:13px; color:var(--text-secondary);">Plotly interactive price chart with 72-hour history. Top-20 sentiment table with 🟢 Positive / 🔴 Negative / 🟡 Neutral labels.</p>
+        </div>
+        <div class="card accent-yellow">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <h3>RAG AI Analyst</h3>
+            <span class="pill pill-green">LIVE</span>
+          </div>
+          <p style="font-size:13px; color:var(--text-secondary);">Conversational chatbot answers market questions using vector-retrieved live news. Strict prompts prevent hallucination — model cites only provided context.</p>
+        </div>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:14px;">
+        <div class="card accent-cyan">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <h3>One-Command Bootstrap</h3>
+            <span class="pill pill-green">LIVE</span>
+          </div>
+          <p style="font-size:13px; color:var(--text-secondary);"><code style="background:#bae6fd; color:#0369a1; padding:2px 6px; border-radius:4px; font-size:12px;">./start_data_pipeline.sh</code> handles env checks, Docker startup, health polls, Flink job submission, and Ollama host IP detection automatically.</p>
+        </div>
+        <div style="background:var(--bg-card); border:1px solid var(--border); border-radius:12px; padding:20px;">
+          <div style="font-size:12px; letter-spacing:1px; text-transform:uppercase; color:var(--text-muted); margin-bottom:14px;">Service Access Points</div>
+          <div style="display:flex; flex-direction:column; gap:10px;">
+            <div style="display:flex; align-items:center; gap:12px;">
+              <span style="font-size:18px;">📊</span>
+              <div style="flex:1; font-size:13px; color:var(--text-secondary);">Streamlit Dashboard</div>
+              <code style="font-size:12px; color:var(--accent-blue); background:#bae6fd; padding:3px 8px; border-radius:4px;">:8502</code>
+            </div>
+            <div style="display:flex; align-items:center; gap:12px;">
+              <span style="font-size:18px;">⚡</span>
+              <div style="flex:1; font-size:13px; color:var(--text-secondary);">Flink Web UI</div>
+              <code style="font-size:12px; color:var(--accent-purple); background:#bae6fd; padding:3px 8px; border-radius:4px;">:8081</code>
+            </div>
+            <div style="display:flex; align-items:center; gap:12px;">
+              <span style="font-size:18px;">📨</span>
+              <div style="flex:1; font-size:13px; color:var(--text-secondary);">Kafka Broker</div>
+              <code style="font-size:12px; color:var(--accent-cyan); background:#bae6fd; padding:3px 8px; border-radius:4px;">:9092</code>
+            </div>
+            <div style="display:flex; align-items:center; gap:12px;">
+              <span style="font-size:18px;">🐘</span>
+              <div style="flex:1; font-size:13px; color:var(--text-secondary);">PostgreSQL</div>
+              <code style="font-size:12px; color:var(--accent-green); background:#bae6fd; padding:3px 8px; border-radius:4px;">:5432</code>
+            </div>
+            <div style="display:flex; align-items:center; gap:12px;">
+              <span style="font-size:18px;">🦙</span>
+              <div style="flex:1; font-size:13px; color:var(--text-secondary);">Ollama (Windows host)</div>
+              <code style="font-size:12px; color:var(--accent-yellow); background:#bae6fd; padding:3px 8px; border-radius:4px;">:11434</code>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════
+       SLIDE 8 — BUSINESS VALUE
+  ════════════════════════════════════════ -->
+  <div class="slide" id="s8">
+    <div class="slide-header">
+      <div class="slide-label">07 — Business Value</div>
+      <h2>Value <span class="grad-text">Delivered</span></h2>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; gap:20px;">
+      <div class="grid-2" style="gap:18px;">
+        <div style="background:linear-gradient(135deg, rgba(59,130,246,0.12), rgba(6,182,212,0.06)); border:1px solid rgba(59,130,246,0.25); border-radius:12px; padding:20px; display:flex; gap:16px;">
+          <div style="font-size:36px;">🎯</div>
+          <div>
+            <h3>Full-Stack AI Portfolio Signal</h3>
+            <p style="font-size:13px; color:var(--text-secondary); margin-top:6px; line-height:1.6;">Demonstrates production-grade integration of streaming data, vector databases, and generative AI — a strong signal for stakeholder demos and technical hiring.</p>
+          </div>
+        </div>
+        <div style="background:linear-gradient(135deg, rgba(16,185,129,0.12), rgba(16,185,129,0.04)); border:1px solid rgba(16,185,129,0.25); border-radius:12px; padding:20px; display:flex; gap:16px;">
+          <div style="font-size:36px;">⚡</div>
+          <div>
+            <h3>Reduced Interpretation Latency</h3>
+            <p style="font-size:13px; color:var(--text-secondary); margin-top:6px; line-height:1.6;">Transforms raw headlines into concise sentiment scores and AI narrative in under 60 seconds — versus minutes of manual reading per ticker.</p>
+          </div>
+        </div>
+        <div style="background:linear-gradient(135deg, rgba(245,158,11,0.12), rgba(245,158,11,0.04)); border:1px solid rgba(245,158,11,0.25); border-radius:12px; padding:20px; display:flex; gap:16px;">
+          <div style="font-size:36px;">📈</div>
+          <div>
+            <h3>Market "Vibe" Abstraction</h3>
+            <p style="font-size:13px; color:var(--text-secondary); margin-top:6px; line-height:1.6;">Provides near-real-time sentiment aggregation across 30 stocks and multiple sectors — giving non-quant users an instant market mood read.</p>
+          </div>
+        </div>
+        <div style="background:linear-gradient(135deg, rgba(139,92,246,0.12), rgba(139,92,246,0.04)); border:1px solid rgba(139,92,246,0.25); border-radius:12px; padding:20px; display:flex; gap:16px;">
+          <div style="font-size:36px;">🔮</div>
+          <div>
+            <h3>Premium Feature Foundation</h3>
+            <p style="font-size:13px; color:var(--text-secondary); margin-top:6px; line-height:1.6;">Architecture supports alerts, watchlists, risk signals, and explainability trails — each a clear premium tier differentiator.</p>
+          </div>
+        </div>
+      </div>
+      <div style="background:var(--bg-card); border:1px solid var(--border); border-radius:12px; padding:18px 24px;">
+        <div style="font-size:12px; letter-spacing:1px; text-transform:uppercase; color:var(--text-muted); margin-bottom:14px;">Potential Premium Features (Next-Phase Revenue Opportunities)</div>
+        <div style="display:flex; gap:12px; flex-wrap:wrap;">
+          <span class="pill pill-blue">🔔 Threshold Alerts</span>
+          <span class="pill pill-green">📋 Watchlists</span>
+          <span class="pill pill-yellow">⚠️ Risk Signals</span>
+          <span class="pill pill-purple">🔍 Explainability Trails</span>
+          <span class="pill pill-cyan">📧 Email / Slack Notifications</span>
+          <span class="pill pill-red">📉 Drawdown Alerts</span>
+          <span class="pill pill-blue">🌐 Sector Heatmap</span>
+          <span class="pill pill-green">📊 Custom Portfolios</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════
+       SLIDE 9 — ENGINEERING QUALITY
+  ════════════════════════════════════════ -->
+  <div class="slide" id="s9">
+    <div class="slide-header">
+      <div class="slide-label">08 — Engineering Quality</div>
+      <h2>Strengths & <span class="grad-text">Gaps</span></h2>
+    </div>
+    <div class="grid-2" style="flex:1; gap:20px;">
+      <!-- Strengths -->
+      <div>
+        <div style="font-size:12px; letter-spacing:1px; text-transform:uppercase; color:var(--accent-green); font-weight:600; margin-bottom:14px;">✦ Strengths</div>
+        <div style="display:flex; flex-direction:column; gap:12px;">
+          <div style="background:rgba(16,185,129,0.06); border:1px solid rgba(16,185,129,0.2); border-radius:10px; padding:14px 18px; display:flex; gap:12px; align-items:flex-start;">
+            <span style="font-size:20px;">🧩</span>
+            <div>
+              <div style="font-size:14px; font-weight:600; color:var(--text-primary); margin-bottom:3px;">Clear Modular Boundaries</div>
+              <p style="font-size:12px; color:var(--text-secondary);">Producer, stream processing, dashboard, and docs are independently deployable. Components can be swapped without cascading changes.</p>
+            </div>
+          </div>
+          <div style="background:rgba(16,185,129,0.06); border:1px solid rgba(16,185,129,0.2); border-radius:10px; padding:14px 18px; display:flex; gap:12px; align-items:flex-start;">
+            <span style="font-size:20px;">🔭</span>
+            <div>
+              <div style="font-size:14px; font-weight:600; color:var(--text-primary); margin-bottom:3px;">Observability Entry Points</div>
+              <p style="font-size:12px; color:var(--text-secondary);">Flink Web UI, Docker logs, PostgreSQL direct access, plus 34+ documentation files covering setup and troubleshooting.</p>
+            </div>
+          </div>
+          <div style="background:rgba(16,185,129,0.06); border:1px solid rgba(16,185,129,0.2); border-radius:10px; padding:14px 18px; display:flex; gap:12px; align-items:flex-start;">
+            <span style="font-size:20px;">📖</span>
+            <div>
+              <div style="font-size:14px; font-weight:600; color:var(--text-primary); margin-bottom:3px;">High Documentation Maturity</div>
+              <p style="font-size:12px; color:var(--text-secondary);">GETTING_STARTED, TROUBLESHOOTING, FLINK_JOB_GUIDE, architecture decisions, and 7 technical deep-dives. New contributors can onboard in hours.</p>
+            </div>
+          </div>
+          <div style="background:rgba(16,185,129,0.06); border:1px solid rgba(16,185,129,0.2); border-radius:10px; padding:14px 18px; display:flex; gap:12px; align-items:flex-start;">
+            <span style="font-size:20px;">🐳</span>
+            <div>
+              <div style="font-size:14px; font-weight:600; color:var(--text-primary); margin-bottom:3px;">Reproducible Environments</div>
+              <p style="font-size:12px; color:var(--text-secondary);">Docker Compose + Docker profiles ensure identical dev/demo environments. Health checks on all services prevent partial-startup issues.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Gaps -->
+      <div>
+        <div style="font-size:12px; letter-spacing:1px; text-transform:uppercase; color:var(--accent-yellow); font-weight:600; margin-bottom:14px;">⚠ Gaps to Address</div>
+        <div style="display:flex; flex-direction:column; gap:12px;">
+          <div style="background:rgba(245,158,11,0.06); border:1px solid rgba(245,158,11,0.2); border-radius:10px; padding:14px 18px; display:flex; gap:12px; align-items:flex-start;">
+            <span style="font-size:20px;">🧪</span>
+            <div>
+              <div style="font-size:14px; font-weight:600; color:var(--text-primary); margin-bottom:3px;">Limited Automated Test Coverage</div>
+              <p style="font-size:12px; color:var(--text-secondary);">No visible unit/integration test suite in repository. CI gates on lint, test, and build needed before pilot readiness.</p>
+              <span class="pill pill-yellow" style="margin-top:6px; display:inline-block;">Month 1 Priority</span>
+            </div>
+          </div>
+          <div style="background:rgba(239,68,68,0.06); border:1px solid rgba(239,68,68,0.2); border-radius:10px; padding:14px 18px; display:flex; gap:12px; align-items:flex-start;">
+            <span style="font-size:20px;">🏗️</span>
+            <div>
+              <div style="font-size:14px; font-weight:600; color:var(--text-primary); margin-bottom:3px;">Single-Node Infrastructure</div>
+              <p style="font-size:12px; color:var(--text-secondary);">Single Kafka broker, single Flink task manager, single Postgres instance. Limits horizontal scale and resilience. No partition governance.</p>
+              <span class="pill pill-red" style="margin-top:6px; display:inline-block;">Scale Blocker</span>
+            </div>
+          </div>
+          <div style="background:rgba(239,68,68,0.06); border:1px solid rgba(239,68,68,0.2); border-radius:10px; padding:14px 18px; display:flex; gap:12px; align-items:flex-start;">
+            <span style="font-size:20px;">🔐</span>
+            <div>
+              <div style="font-size:14px; font-weight:600; color:var(--text-primary); margin-bottom:3px;">Local Credential Management</div>
+              <p style="font-size:12px; color:var(--text-secondary);">API keys and DB credentials stored in local .env files. Not yet integrated with enterprise secret stores or scoped service accounts.</p>
+              <span class="pill pill-red" style="margin-top:6px; display:inline-block;">Security Gap</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════
+       SLIDE 10 — RISKS
+  ════════════════════════════════════════ -->
+  <div class="slide" id="s10">
+    <div class="slide-header">
+      <div class="slide-label">09 — Risk Management</div>
+      <h2>Key Risks & <span class="grad-text">Mitigations</span></h2>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; gap:14px;">
+      <!-- Header row -->
+      <div class="risk-row" style="font-size:11px; letter-spacing:1px; text-transform:uppercase; color:var(--text-muted); font-weight:600;">
+        <div>Risk</div>
+        <div>Description</div>
+        <div>Mitigation</div>
+      </div>
+      <!-- Risk 1 -->
+      <div class="risk-row" style="background:var(--bg-card); border-radius:10px; padding:14px 0; align-items:stretch;">
+        <div style="padding:0 16px; display:flex; align-items:center;">
+          <div style="background:rgba(239,68,68,0.15); border-radius:8px; padding:8px 12px; text-align:center; width:100%;">
+            <div style="font-size:18px; margin-bottom:4px;">🔌</div>
+            <div class="risk-badge" style="background:rgba(239,68,68,0.2); color:#fca5a5;">Operational</div>
+          </div>
+        </div>
+        <div style="padding:0 16px; border-left:1px solid var(--border);">
+          <div style="font-size:14px; font-weight:600; color:var(--text-primary); margin-bottom:4px;">Pipeline Interruption</div>
+          <p style="font-size:13px; color:var(--text-secondary);">Local environment or network dependency failure can halt news/price ingestion, causing stale data in dashboard with no auto-recovery.</p>
+        </div>
+        <div style="padding:0 16px; border-left:1px solid var(--border);">
+          <ul class="check" style="font-size:13px;">
+            <li>Add Docker health probes</li>
+            <li>Auto-restart policies on consumers</li>
+            <li>Synthetic data backfill mode for offline demo</li>
+          </ul>
+        </div>
+      </div>
+      <!-- Risk 2 -->
+      <div class="risk-row" style="background:var(--bg-card); border-radius:10px; padding:14px 0; align-items:stretch;">
+        <div style="padding:0 16px; display:flex; align-items:center;">
+          <div style="background:rgba(245,158,11,0.15); border-radius:8px; padding:8px 12px; text-align:center; width:100%;">
+            <div style="font-size:18px; margin-bottom:4px;">📊</div>
+            <div class="risk-badge" style="background:rgba(245,158,11,0.2); color:#fcd34d;">Data Quality</div>
+          </div>
+        </div>
+        <div style="padding:0 16px; border-left:1px solid var(--border);">
+          <div style="font-size:14px; font-weight:600; color:var(--text-primary); margin-bottom:4px;">Sentiment False Signals</div>
+          <p style="font-size:13px; color:var(--text-secondary);">VADER analyzes headline text only — lacks full article context, may misread irony or ambiguity in financial language.</p>
+        </div>
+        <div style="padding:0 16px; border-left:1px solid var(--border);">
+          <ul class="check" style="font-size:13px;">
+            <li>Add confidence banding per score</li>
+            <li>Source quality weighting</li>
+            <li>Outcome feedback loop for calibration</li>
+          </ul>
+        </div>
+      </div>
+      <!-- Risk 3 -->
+      <div class="risk-row" style="background:var(--bg-card); border-radius:10px; padding:14px 0; align-items:stretch;">
+        <div style="padding:0 16px; display:flex; align-items:center;">
+          <div style="background:rgba(139,92,246,0.15); border-radius:8px; padding:8px 12px; text-align:center; width:100%;">
+            <div style="font-size:18px; margin-bottom:4px;">🤖</div>
+            <div class="risk-badge" style="background:rgba(139,92,246,0.2); color:#c4b5fd;">AI Reliability</div>
+          </div>
+        </div>
+        <div style="padding:0 16px; border-left:1px solid var(--border);">
+          <div style="font-size:14px; font-weight:600; color:var(--text-primary); margin-bottom:4px;">LLM Hallucination</div>
+          <p style="font-size:13px; color:var(--text-secondary);">Llama 3 may generate plausible-sounding but incorrect market analysis if context retrieval misses or model deviates from prompt instructions.</p>
+        </div>
+        <div style="padding:0 16px; border-left:1px solid var(--border);">
+          <ul class="check" style="font-size:13px;">
+            <li>Strict prompt constraints + response templates</li>
+            <li>Citation of retrieved context snippets</li>
+            <li>Prompt: "If no relevant news, admit it"</li>
+          </ul>
+        </div>
+      </div>
+      <!-- Risk 4 -->
+      <div class="risk-row" style="background:var(--bg-card); border-radius:10px; padding:14px 0; align-items:stretch;">
+        <div style="padding:0 16px; display:flex; align-items:center;">
+          <div style="background:rgba(239,68,68,0.15); border-radius:8px; padding:8px 12px; text-align:center; width:100%;">
+            <div style="font-size:18px; margin-bottom:4px;">🔐</div>
+            <div class="risk-badge" style="background:rgba(239,68,68,0.2); color:#fca5a5;">Security</div>
+          </div>
+        </div>
+        <div style="padding:0 16px; border-left:1px solid var(--border);">
+          <div style="font-size:14px; font-weight:600; color:var(--text-primary); margin-bottom:4px;">Local Key Handling</div>
+          <p style="font-size:13px; color:var(--text-secondary);">API keys and DB credentials in .env files on developer machines. Open service boundaries in Docker network without authentication.</p>
+        </div>
+        <div style="padding:0 16px; border-left:1px solid var(--border);">
+          <ul class="check" style="font-size:13px;">
+            <li>Move to managed secret vault</li>
+            <li>Scoped service accounts per component</li>
+            <li>Network policy hardening</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════
+       SLIDE 11 — SCALABILITY
+  ════════════════════════════════════════ -->
+  <div class="slide" id="s11">
+    <div class="slide-header">
+      <div class="slide-label">10 — Performance</div>
+      <h2>Scalability <span class="grad-text">Outlook</span></h2>
+    </div>
+    <div class="grid-2" style="flex:1; gap:20px;">
+      <div style="display:flex; flex-direction:column; gap:14px;">
+        <div style="background:rgba(16,185,129,0.06); border:1px solid rgba(16,185,129,0.2); border-radius:12px; padding:18px;">
+          <div style="font-size:12px; letter-spacing:1px; text-transform:uppercase; color:var(--accent-green); margin-bottom:10px; font-weight:600;">Current Capacity</div>
+          <ul class="check">
+            <li>30 tickers — lightweight real-time workload</li>
+            <li>60-second polling respects Finnhub free tier</li>
+            <li>72-hour data window manages storage growth</li>
+            <li>Works effectively for demo/portfolio traffic</li>
+          </ul>
+        </div>
+        <div style="background:rgba(239,68,68,0.06); border:1px solid rgba(239,68,68,0.2); border-radius:12px; padding:18px;">
+          <div style="font-size:12px; letter-spacing:1px; text-transform:uppercase; color:var(--accent-red); margin-bottom:10px; font-weight:600;">Scale Blockers</div>
+          <ul class="bullet">
+            <li style="color:var(--text-secondary);">Single Kafka broker — no partition replication</li>
+            <li style="color:var(--text-secondary);">Single Postgres instance — no read replicas</li>
+            <li style="color:var(--text-secondary);">No retention governance by workload tier</li>
+            <li style="color:var(--text-secondary);">No load or soak testing evidence</li>
+            <li style="color:var(--text-secondary);">Ollama on Windows host — GPU bottleneck at concurrent queries</li>
+          </ul>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:12px; letter-spacing:1px; text-transform:uppercase; color:var(--accent-blue); margin-bottom:14px; font-weight:600;">Recommended Scaling Path</div>
+        <div style="display:flex; flex-direction:column; gap:12px;">
+          <div style="display:flex; gap:14px; align-items:flex-start;">
+            <div style="background:var(--accent-blue); color:#fff; border-radius:50%; width:28px; height:28px; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; flex-shrink:0; margin-top:2px;">1</div>
+            <div style="background:var(--bg-card); border:1px solid var(--border); border-radius:10px; padding:14px; flex:1;">
+              <div style="font-size:14px; font-weight:600; color:var(--text-primary); margin-bottom:4px;">Staging + SLO Baselines</div>
+              <p style="font-size:12px; color:var(--text-secondary);">Create a staging environment. Define SLOs for pipeline latency, sentiment freshness, and dashboard load time. Establish baseline metrics before scaling.</p>
+            </div>
+          </div>
+          <div style="display:flex; gap:14px; align-items:flex-start;">
+            <div style="background:var(--accent-cyan); color:#fff; border-radius:50%; width:28px; height:28px; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; flex-shrink:0; margin-top:2px;">2</div>
+            <div style="background:var(--bg-card); border:1px solid var(--border); border-radius:10px; padding:14px; flex:1;">
+              <div style="font-size:14px; font-weight:600; color:var(--text-primary); margin-bottom:4px;">Horizontal Scaling + Partitioning</div>
+              <p style="font-size:12px; color:var(--text-secondary);">Add Kafka partitions per topic, scale Flink TaskManagers, add Postgres read replica. Implement retention governance (hot/warm/cold tiers).</p>
+            </div>
+          </div>
+          <div style="display:flex; gap:14px; align-items:flex-start;">
+            <div style="background:var(--accent-green); color:#fff; border-radius:50%; width:28px; height:28px; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; flex-shrink:0; margin-top:2px;">3</div>
+            <div style="background:var(--bg-card); border:1px solid var(--border); border-radius:10px; padding:14px; flex:1;">
+              <div style="font-size:14px; font-weight:600; color:var(--text-primary); margin-bottom:4px;">Managed Services / Kubernetes</div>
+              <p style="font-size:12px; color:var(--text-secondary);">Migrate Kafka → Confluent Cloud or MSK, Postgres → RDS, LLM → cloud endpoint. Kubernetes orchestration for sustained throughput and auto-scaling.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════
+       SLIDE 12 — SECURITY
+  ════════════════════════════════════════ -->
+  <div class="slide" id="s12">
+    <div class="slide-header">
+      <div class="slide-label">11 — Security & Compliance</div>
+      <h2>Security <span class="grad-text">Readiness</span></h2>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; gap:18px;">
+      <div style="background:var(--bg-card); border:1px solid var(--border); border-radius:12px; padding:18px 24px; display:flex; align-items:center; gap:20px;">
+        <div style="text-align:center; min-width:120px;">
+          <div style="font-size:13px; color:var(--text-muted); margin-bottom:6px;">Current Maturity</div>
+          <div style="background:rgba(245,158,11,0.15); border:1px solid var(--accent-yellow); border-radius:8px; padding:10px 16px; display:inline-block;">
+            <div style="font-size:20px; font-weight:800; color:var(--accent-yellow);">3 / 10</div>
+            <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Early Developer</div>
+          </div>
+        </div>
+        <div style="flex:1;">
+          <div style="height:12px; background:var(--bg-card2); border-radius:6px; overflow:hidden;">
+            <div style="width:30%; height:100%; background:linear-gradient(90deg, var(--accent-yellow), var(--accent-red)); border-radius:6px;"></div>
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-top:6px; font-size:11px; color:var(--text-muted);">
+            <span>Dev / Demo</span>
+            <span>Early Developer ← Current</span>
+            <span>Enterprise Ready</span>
+          </div>
+        </div>
+      </div>
+      <div class="grid-2" style="gap:16px; flex:1;">
+        <div>
+          <div style="font-size:12px; letter-spacing:1px; text-transform:uppercase; color:var(--accent-red); margin-bottom:12px; font-weight:600;">Priority Controls to Add</div>
+          <div style="display:flex; flex-direction:column; gap:10px;">
+            <div style="background:var(--bg-card); border:1px solid var(--border); border-radius:8px; padding:12px 16px; display:flex; gap:12px; align-items:center;">
+              <span style="font-size:20px;">🔐</span>
+              <div>
+                <div style="font-size:13px; font-weight:600; color:var(--text-primary);">Secrets Management</div>
+                <div style="font-size:12px; color:var(--text-secondary);">Move to managed vault — remove plaintext .env dependencies</div>
+              </div>
+              <span class="pill pill-red" style="margin-left:auto; white-space:nowrap;">High</span>
+            </div>
+            <div style="background:var(--bg-card); border:1px solid var(--border); border-radius:8px; padding:12px 16px; display:flex; gap:12px; align-items:center;">
+              <span style="font-size:20px;">📝</span>
+              <div>
+                <div style="font-size:13px; font-weight:600; color:var(--text-primary);">Audit Logging</div>
+                <div style="font-size:12px; color:var(--text-secondary);">Log user prompts and model responses for compliance trails</div>
+              </div>
+              <span class="pill pill-yellow" style="margin-left:auto; white-space:nowrap;">Medium</span>
+            </div>
+            <div style="background:var(--bg-card); border:1px solid var(--border); border-radius:8px; padding:12px 16px; display:flex; gap:12px; align-items:center;">
+              <span style="font-size:20px;">🗂️</span>
+              <div>
+                <div style="font-size:13px; font-weight:600; color:var(--text-primary);">Data Classification Policy</div>
+                <div style="font-size:12px; color:var(--text-secondary);">PII classification, retention windows, deletion workflow</div>
+              </div>
+              <span class="pill pill-yellow" style="margin-left:auto; white-space:nowrap;">Medium</span>
+            </div>
+            <div style="background:var(--bg-card); border:1px solid var(--border); border-radius:8px; padding:12px 16px; display:flex; gap:12px; align-items:center;">
+              <span style="font-size:20px;">🔍</span>
+              <div>
+                <div style="font-size:13px; font-weight:600; color:var(--text-primary);">Dependency & Image Scanning</div>
+                <div style="font-size:12px; color:var(--text-secondary);">CVE scanning in CI for Python deps and Docker images</div>
+              </div>
+              <span class="pill pill-yellow" style="margin-left:auto; white-space:nowrap;">Medium</span>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:12px; letter-spacing:1px; text-transform:uppercase; color:var(--accent-green); margin-bottom:12px; font-weight:600;">Already in Place</div>
+          <div style="background:var(--bg-card); border:1px solid var(--border); border-radius:10px; padding:16px 18px;">
+            <ul class="check">
+              <li>Docker network isolation — services not directly exposed</li>
+              <li>.env.example template — no secrets committed to git</li>
+              <li>Prompt constraints on AI to prevent data leakage</li>
+              <li>Separate service accounts per Docker service</li>
+              <li>Health checks prevent partial-startup exposure</li>
+            </ul>
+          </div>
+          <div style="background:rgba(59,130,246,0.06); border:1px solid rgba(59,130,246,0.2); border-radius:10px; padding:16px 18px; margin-top:12px;">
+            <div style="font-size:13px; font-weight:600; color:var(--accent-blue); margin-bottom:6px;">Target: Month 3</div>
+            <p style="font-size:12px; color:var(--text-secondary);">Security controls (secrets vault, RBAC, scanning in CI) are targeted for Month 3 of the roadmap — ahead of any external pilot users.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════
+       SLIDE 13 — ROADMAP
+  ════════════════════════════════════════ -->
+  <div class="slide" id="s13">
+    <div class="slide-header">
+      <div class="slide-label">12 — Roadmap</div>
+      <h2>90-Day <span class="grad-text">Roadmap</span></h2>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; gap:20px; justify-content:space-around;">
+      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:18px;">
+        <!-- Month 1 -->
+        <div style="background:linear-gradient(160deg, rgba(59,130,246,0.1), rgba(6,182,212,0.05)); border:1px solid rgba(59,130,246,0.3); border-radius:14px; padding:22px;">
+          <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
+            <div style="background:var(--accent-blue); color:#fff; border-radius:10px; width:36px; height:36px; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:15px; flex-shrink:0;">1</div>
+            <div>
+              <div style="font-size:16px; font-weight:700; color:var(--text-primary);">Month 1</div>
+              <div style="font-size:12px; color:var(--accent-blue);">Reliability Foundation</div>
+            </div>
+          </div>
+          <ul style="list-style:none; padding:0; display:flex; flex-direction:column; gap:10px;">
+            <li style="display:flex; gap:10px; align-items:flex-start;">
+              <span style="color:var(--accent-blue); margin-top:1px;">◆</span>
+              <div>
+                <div style="font-size:13px; font-weight:600; color:var(--text-primary);">CI Pipeline</div>
+                <div style="font-size:11px; color:var(--text-muted);">Lint, test, and build gates on every PR</div>
+              </div>
+            </li>
+            <li style="display:flex; gap:10px; align-items:flex-start;">
+              <span style="color:var(--accent-blue); margin-top:1px;">◆</span>
+              <div>
+                <div style="font-size:13px; font-weight:600; color:var(--text-primary);">Health Checks + Auto-Restart</div>
+                <div style="font-size:11px; color:var(--text-muted);">Docker restart policies on all producers</div>
+              </div>
+            </li>
+            <li style="display:flex; gap:10px; align-items:flex-start;">
+              <span style="color:var(--accent-blue); margin-top:1px;">◆</span>
+              <div>
+                <div style="font-size:13px; font-weight:600; color:var(--text-primary);">Structured Logging + Metrics</div>
+                <div style="font-size:11px; color:var(--text-muted);">Baseline metrics dashboard for pipeline health</div>
+              </div>
+            </li>
+          </ul>
+        </div>
+        <!-- Month 2 -->
+        <div style="background:linear-gradient(160deg, rgba(139,92,246,0.1), rgba(139,92,246,0.04)); border:1px solid rgba(139,92,246,0.3); border-radius:14px; padding:22px;">
+          <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
+            <div style="background:var(--accent-purple); color:#fff; border-radius:10px; width:36px; height:36px; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:15px; flex-shrink:0;">2</div>
+            <div>
+              <div style="font-size:16px; font-weight:700; color:var(--text-primary);">Month 2</div>
+              <div style="font-size:12px; color:var(--accent-purple);">Product & Model Quality</div>
+            </div>
+          </div>
+          <ul style="list-style:none; padding:0; display:flex; flex-direction:column; gap:10px;">
+            <li style="display:flex; gap:10px; align-items:flex-start;">
+              <span style="color:var(--accent-purple); margin-top:1px;">◆</span>
+              <div>
+                <div style="font-size:13px; font-weight:600; color:var(--text-primary);">Sentiment Calibration</div>
+                <div style="font-size:11px; color:var(--text-muted);">Validation dataset + confidence banding</div>
+              </div>
+            </li>
+            <li style="display:flex; gap:10px; align-items:flex-start;">
+              <span style="color:var(--accent-purple); margin-top:1px;">◆</span>
+              <div>
+                <div style="font-size:13px; font-weight:600; color:var(--text-primary);">Alerting Feature</div>
+                <div style="font-size:11px; color:var(--text-muted);">Threshold-based watchlist notifications</div>
+              </div>
+            </li>
+            <li style="display:flex; gap:10px; align-items:flex-start;">
+              <span style="color:var(--accent-purple); margin-top:1px;">◆</span>
+              <div>
+                <div style="font-size:13px; font-weight:600; color:var(--text-primary);">AI Citation UX</div>
+                <div style="font-size:11px; color:var(--text-muted);">Better answer grounding, source display</div>
+              </div>
+            </li>
+          </ul>
+        </div>
+        <!-- Month 3 -->
+        <div style="background:linear-gradient(160deg, rgba(16,185,129,0.1), rgba(16,185,129,0.04)); border:1px solid rgba(16,185,129,0.3); border-radius:14px; padding:22px;">
+          <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
+            <div style="background:var(--accent-green); color:#fff; border-radius:10px; width:36px; height:36px; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:15px; flex-shrink:0;">3</div>
+            <div>
+              <div style="font-size:16px; font-weight:700; color:var(--text-primary);">Month 3</div>
+              <div style="font-size:12px; color:var(--accent-green);">Production Hardening</div>
+            </div>
+          </div>
+          <ul style="list-style:none; padding:0; display:flex; flex-direction:column; gap:10px;">
+            <li style="display:flex; gap:10px; align-items:flex-start;">
+              <span style="color:var(--accent-green); margin-top:1px;">◆</span>
+              <div>
+                <div style="font-size:13px; font-weight:600; color:var(--text-primary);">Staging Deploy + Runbook</div>
+                <div style="font-size:11px; color:var(--text-muted);">Full staging environment, ops runbook complete</div>
+              </div>
+            </li>
+            <li style="display:flex; gap:10px; align-items:flex-start;">
+              <span style="color:var(--accent-green); margin-top:1px;">◆</span>
+              <div>
+                <div style="font-size:13px; font-weight:600; color:var(--text-primary);">Security Controls</div>
+                <div style="font-size:11px; color:var(--text-muted);">Secrets vault, RBAC, dep scanning in CI</div>
+              </div>
+            </li>
+            <li style="display:flex; gap:10px; align-items:flex-start;">
+              <span style="color:var(--accent-green); margin-top:1px;">◆</span>
+              <div>
+                <div style="font-size:13px; font-weight:600; color:var(--text-primary);">Pilot Readiness Review</div>
+                <div style="font-size:11px; color:var(--text-muted);">Leadership sign-off for first external users</div>
+              </div>
+            </li>
+          </ul>
+        </div>
+      </div>
+      <!-- Timeline bar -->
+      <div style="background:var(--bg-card); border:1px solid var(--border); border-radius:10px; padding:16px 24px;">
+        <div style="font-size:12px; letter-spacing:1px; text-transform:uppercase; color:var(--text-muted); margin-bottom:12px; font-weight:600;">Sprint Timeline</div>
+        <div style="position:relative; height:8px; background:var(--bg-card2); border-radius:4px; overflow:hidden; margin-bottom:8px;">
+          <div style="position:absolute; left:0; top:0; width:33%; height:100%; background:var(--accent-blue); opacity:0.8;"></div>
+          <div style="position:absolute; left:33%; top:0; width:33%; height:100%; background:var(--accent-purple); opacity:0.8;"></div>
+          <div style="position:absolute; left:66%; top:0; width:34%; height:100%; background:var(--accent-green); opacity:0.8;"></div>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text-muted);">
+          <span>May 2026 — Reliability</span>
+          <span>June 2026 — Quality</span>
+          <span>July 2026 — Hardening → Pilot</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════
+       SLIDE 14 — DECISIONS REQUESTED
+  ════════════════════════════════════════ -->
+  <div class="slide" id="s14">
+    <div class="slide-header">
+      <div class="slide-label">13 — Leadership Actions</div>
+      <h2>Decisions <span class="grad-text">Requested</span></h2>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; gap:16px; justify-content:space-around;">
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; flex:1;">
+        <div style="background:linear-gradient(135deg, rgba(59,130,246,0.1), rgba(6,182,212,0.05)); border:1px solid rgba(59,130,246,0.3); border-radius:14px; padding:24px; display:flex; gap:16px;">
+          <div style="background:var(--accent-blue); color:#fff; border-radius:10px; width:40px; height:40px; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:18px; flex-shrink:0;">1</div>
+          <div>
+            <h3>Approve 90-Day Hardening Sprint</h3>
+            <p style="font-size:13px; color:var(--text-secondary); margin-top:8px; line-height:1.6;">Dedicate focused engineering time to reliability, testing, and security hardening before any external pilot. Three months of focused work delivers production-grade quality.</p>
+            <div style="margin-top:12px; display:flex; gap:8px;">
+              <div style="background:rgba(16,185,129,0.15); border:1px solid var(--accent-green); border-radius:6px; padding:6px 12px; font-size:12px; font-weight:600; color:var(--accent-green); cursor:pointer;">✓ Approve</div>
+              <div style="background:var(--bg-card2); border:1px solid var(--border); border-radius:6px; padding:6px 12px; font-size:12px; color:var(--text-muted); cursor:pointer;">Defer</div>
+            </div>
+          </div>
+        </div>
+        <div style="background:linear-gradient(135deg, rgba(139,92,246,0.1), rgba(139,92,246,0.04)); border:1px solid rgba(139,92,246,0.3); border-radius:14px; padding:24px; display:flex; gap:16px;">
+          <div style="background:var(--accent-purple); color:#fff; border-radius:10px; width:40px; height:40px; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:18px; flex-shrink:0;">2</div>
+          <div>
+            <h3>Reliability First — No Net-New Features</h3>
+            <p style="font-size:13px; color:var(--text-secondary); margin-top:8px; line-height:1.6;">Prioritize reliability and security over feature breadth for the next 90 days. Avoid scope creep that delays hardening and pushes the pilot timeline.</p>
+            <div style="margin-top:12px; display:flex; gap:8px;">
+              <div style="background:rgba(16,185,129,0.15); border:1px solid var(--accent-green); border-radius:6px; padding:6px 12px; font-size:12px; font-weight:600; color:var(--accent-green); cursor:pointer;">✓ Confirm</div>
+              <div style="background:var(--bg-card2); border:1px solid var(--border); border-radius:6px; padding:6px 12px; font-size:12px; color:var(--text-muted); cursor:pointer;">Discuss</div>
+            </div>
+          </div>
+        </div>
+        <div style="background:linear-gradient(135deg, rgba(245,158,11,0.1), rgba(245,158,11,0.04)); border:1px solid rgba(245,158,11,0.3); border-radius:14px; padding:24px; display:flex; gap:16px;">
+          <div style="background:var(--accent-yellow); color:#fff; border-radius:10px; width:40px; height:40px; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:18px; flex-shrink:0;">3</div>
+          <div>
+            <h3>Confirm Pilot Audience</h3>
+            <p style="font-size:13px; color:var(--text-secondary); margin-top:8px; line-height:1.6;">Define who receives access in Month 3 pilot. Internal analytics teams (lower risk, faster feedback) vs. external beta users (market signal, higher support burden)?</p>
+            <div style="margin-top:12px; display:flex; gap:8px;">
+              <div style="background:var(--bg-card2); border:1px solid var(--border); border-radius:6px; padding:6px 12px; font-size:12px; color:var(--text-muted); cursor:pointer;">Internal First</div>
+              <div style="background:var(--bg-card2); border:1px solid var(--border); border-radius:6px; padding:6px 12px; font-size:12px; color:var(--text-muted); cursor:pointer;">External Beta</div>
+            </div>
+          </div>
+        </div>
+        <div style="background:linear-gradient(135deg, rgba(16,185,129,0.1), rgba(16,185,129,0.04)); border:1px solid rgba(16,185,129,0.3); border-radius:14px; padding:24px; display:flex; gap:16px;">
+          <div style="background:var(--accent-green); color:#fff; border-radius:10px; width:40px; height:40px; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:18px; flex-shrink:0;">4</div>
+          <div>
+            <h3>Approve Cloud Budget</h3>
+            <p style="font-size:13px; color:var(--text-secondary); margin-top:8px; line-height:1.6;">If uptime goals exceed local-stack limits, approve budget for managed Kafka (Confluent Cloud / MSK), managed Postgres (RDS), and cloud LLM endpoint.</p>
+            <div style="margin-top:12px; display:flex; gap:8px;">
+              <div style="background:rgba(16,185,129,0.15); border:1px solid var(--accent-green); border-radius:6px; padding:6px 12px; font-size:12px; font-weight:600; color:var(--accent-green); cursor:pointer;">✓ Approve</div>
+              <div style="background:var(--bg-card2); border:1px solid var(--border); border-radius:6px; padding:6px 12px; font-size:12px; color:var(--text-muted); cursor:pointer;">Hold for Now</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════
+       SLIDE 15 — CLOSING
+  ════════════════════════════════════════ -->
+  <div class="slide" id="s15" style="justify-content:center; align-items:center;
+    background:
+      radial-gradient(ellipse 60% 70% at 30% 50%, rgba(3,105,161,0.18) 0%, transparent 70%),
+      radial-gradient(ellipse 50% 50% at 70% 60%, rgba(5,150,105,0.12) 0%, transparent 60%),
+      var(--bg-dark);">
+    <div style="text-align:center; max-width:700px;">
+      <div style="font-size:48px; margin-bottom:20px;">📊</div>
+      <h1 style="font-size:48px; line-height:1.1; margin-bottom:16px;">
+        <span class="grad-text">Market Mood Ring</span>
+      </h1>
+      <p style="font-size:18px; color:var(--text-secondary); line-height:1.7; margin-bottom:36px;">
+        Real-time market intelligence, powered by streaming data and conversational AI.<br>
+        Built to grow from <em style="color:var(--text-primary);">portfolio-ready</em> to <em style="color:var(--text-primary);">enterprise-ready</em> in 90 days.
+      </p>
+      <div style="display:flex; justify-content:center; gap:16px; margin-bottom:40px; flex-wrap:wrap;">
+        <span class="pill pill-blue">Apache Kafka</span>
+        <span class="pill pill-purple">Apache Flink</span>
+        <span class="pill pill-green">PostgreSQL + pgvector</span>
+        <span class="pill pill-yellow">Llama 3 + Ollama</span>
+        <span class="pill pill-cyan">Streamlit</span>
+        <span class="pill pill-red">NLTK VADER</span>
+      </div>
+      <div style="background:var(--bg-card); border:1px solid var(--border); border-radius:12px; padding:20px 32px; display:inline-block;">
+        <div style="font-size:13px; color:var(--text-muted); margin-bottom:4px;">Prepared by</div>
+        <div style="font-size:15px; font-weight:600; color:var(--text-primary);">vgandhi1 · Market Mood Ring Team</div>
+        <div style="font-size:13px; color:var(--text-muted); margin-top:2px;">May 2026 · MARKET_MOOD_RING / main</div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- #deck -->
+
+<!-- Navigation -->
+<div id="nav">
+  <button onclick="prevSlide()">← Prev</button>
+  <span id="slide-counter">1 / 15</span>
+  <button onclick="nextSlide()">Next →</button>
+</div>
+
+<div id="dots"></div>
+
+<script>
+  const TOTAL = 15;
+  let current = 1;
+
+  // Build dots
+  const dotsEl = document.getElementById('dots');
+  for (let i = 1; i <= TOTAL; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === 1 ? ' active' : '');
+    d.title = 'Slide ' + i;
+    d.onclick = () => goTo(i);
+    dotsEl.appendChild(d);
+  }
+
+  function goTo(n) {
+    if (n < 1 || n > TOTAL) return;
+    const prev = document.getElementById('s' + current);
+    const next = document.getElementById('s' + n);
+    if (prev) { prev.classList.remove('active', 'fade-in'); }
+    current = n;
+    next.classList.add('active', 'fade-in');
+    document.getElementById('slide-counter').textContent = n + ' / ' + TOTAL;
+    document.querySelectorAll('.dot').forEach((d, i) => {
+      d.classList.toggle('active', i + 1 === n);
+    });
+  }
+
+  function nextSlide() { goTo(current + 1); }
+  function prevSlide() { goTo(current - 1); }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') { e.preventDefault(); nextSlide(); }
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')                    { e.preventDefault(); prevSlide(); }
+    if (e.key === 'Home') goTo(1);
+    if (e.key === 'End')  goTo(TOTAL);
+  });
+
+  // Touch/swipe
+  let touchX = null;
+  document.addEventListener('touchstart', e => { touchX = e.touches[0].clientX; });
+  document.addEventListener('touchend', e => {
+    if (touchX === null) return;
+    const dx = e.changedTouches[0].clientX - touchX;
+    if (Math.abs(dx) > 50) { dx < 0 ? nextSlide() : prevSlide(); }
+    touchX = null;
+  });
+</script>
+</body>
+</html>
