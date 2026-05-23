@@ -5,6 +5,17 @@
 
 > **Status:** ✅ Production Ready - Full ETL Pipeline + Local LLM Integration Operational
 
+<div align="center">
+
+[![Live Presentation](https://img.shields.io/badge/presentation-live-brightgreen?style=flat-square)](https://vgandhi1.github.io/MARKET_MOOD_RING/)
+[![View Slides](https://img.shields.io/badge/slides-manage%2Fpresentation.html-0891b2?style=flat-square)](manage/presentation.html)
+
+📊 **[Live Presentation](https://vgandhi1.github.io/MARKET_MOOD_RING/)** · [Static slides](manage/presentation.html) · [Leadership deck (Markdown)](manage/leadership-review-deck.md)
+
+*Pages: **Settings → Pages → Source: GitHub Actions**, then run **Deploy GitHub Pages** workflow ([.github/workflows/pages.yml](.github/workflows/pages.yml)).*
+
+</div>
+
 ---
 
 ## 📂 Folder Structure
@@ -32,6 +43,9 @@ Market_Mood_Ring/
 ├── docker-compose.yaml         # The Infrastructure (Kafka KRaft, Postgres, Flink)
 ├── Dockerfile.flink            # Custom Flink image with NLTK
 ├── init.sql                    # SQL to create tables & vector extension
+├── manage/                     # Leadership materials
+│   ├── presentation.html       # Static slide deck (GitHub Pages)
+│   └── leadership-review-deck.md
 ├── requirements.txt            # Python dependencies
 ├── start_data_pipeline.sh      # Pipeline startup script
 ├── test_ollama_connection.py   # Diagnostic script
@@ -41,7 +55,7 @@ Market_Mood_Ring/
 ---
 
 ## 📝 Overview
-The **Market Mood Ring** is a real-time financial analytics platform designed to detect the "vibe" of the market. By analyzing live news headlines as they break and correlating them with price movements, it provides an AI Analyst that can explain market fluctuations to users in plain English.
+The **Market Mood Ring** is a real-time financial analytics platform that scores market **mood** from live news and prices. By analyzing headlines as they break and correlating them with price movements, it provides an AI Analyst that explains market fluctuations in plain English.
 
 ### Key Features
 * **Real-Time Ingestion:** Streams live stock prices and news headlines via Kafka (KRaft mode).
@@ -52,6 +66,10 @@ The **Market Mood Ring** is a real-time financial analytics platform designed to
 ---
 
 ## 🎬 Demo & Screenshots
+
+### Leadership presentation (GitHub Pages)
+
+Use the **[live slide deck](https://vgandhi1.github.io/MARKET_MOOD_RING/)** for stakeholder walkthroughs (architecture, business value, roadmap). Source: [`manage/presentation.html`](manage/presentation.html). Deploys on push when [Pages](https://github.com/vgandhi1/MARKET_MOOD_RING/settings/pages) uses **GitHub Actions** as the source.
 
 ### Live Dashboard in Action
 ![Live Dashboard Demo](live-dashboard.gif)
@@ -74,47 +92,73 @@ The **Market Mood Ring** is a real-time financial analytics platform designed to
 
 ## 🏗️ Architecture
 
-### System Overview
+### Layered system view
+
+| Layer | Components | Responsibility |
+|-------|------------|----------------|
+| **Sources** | Finnhub REST API | News headlines and stock quotes (60s poll) |
+| **Ingestion** | `news_producer`, `price_producer`, `price_consumer`, `rag_ingest` | Publish to Kafka; persist prices and embeddings |
+| **Streaming** | Kafka KRaft (`stock_news`, `stock_prices`) | Durable, ordered event bus (no Zookeeper) |
+| **Processing** | Flink + `flink_sentiment.py` (NLTK VADER UDF) | Real-time sentiment scores → `sentiment_log` |
+| **Storage** | PostgreSQL `market_mood` + pgvector | Time series, sentiment, vector RAG store |
+| **Intelligence** | Ollama Llama 3 on Windows host | Grounded answers via retrieval + generation |
+| **Experience** | Streamlit `:8502`, leadership slides | Live dashboard and stakeholder demo |
+
+### End-to-end data flow
+
+```mermaid
+flowchart LR
+    subgraph ingest [Ingestion]
+        FH[Finnhub API]
+        NP[news_producer]
+        PP[price_producer]
+        PC[price_consumer]
+        RI[rag_ingest]
+    end
+
+    subgraph stream [Streaming]
+        K1[stock_news]
+        K2[stock_prices]
+        FL[flink_sentiment.py]
+    end
+
+    subgraph store [PostgreSQL market_mood]
+        SL[sentiment_log]
+        PL[price_log]
+        FK[financial_knowledge]
+    end
+
+    FH --> NP & PP
+    NP --> K1 --> FL --> SL
+    PP --> K2 --> PC --> PL
+    K1 --> RI --> FK
+
+    subgraph ui [Experience]
+        ST[Streamlit Dashboard]
+        OL[Ollama host :11434]
+    end
+
+    SL & PL & FK --> ST
+    FK --> ST
+    OL <--> ST
+```
+
+### System diagram (deployment)
 
 ```mermaid
 graph TD
-    %% External API
-    API[Finnhub API<br/>News & Price Data] 
-
-    %% Ingestion Layer
-    API -->|REST API Calls<br/>Every 60s| PROD[Python Producers<br/>news_producer.py<br/>price_producer.py]
-    
-    %% Message Broker
-    PROD -->|Publish JSON| KAFKA{Apache Kafka KRaft<br/>Topics: stock_news, stock_prices}
-    
-    %% Stream Processing
-    KAFKA -->|Consume News| FLINK[Apache Flink + PyFlink<br/>NLTK Sentiment UDF<br/>vader_lexicon]
-    FLINK -->|Calculate Sentiment<br/>-1.0 to +1.0| FLINK
-    
-    %% Storage Layer
-    FLINK -->|Write Sentiment Scores| DB[(PostgreSQL + pgvector<br/>sentiment_log<br/>price_log<br/>financial_knowledge)]
-    PROD -->|Price Consumer<br/>Writes Prices| DB
-    PROD -->|RAG Ingest<br/>Embeddings| DB
-    
-    %% AI Layer
-    OLLAMA[Ollama Llama 3<br/>Windows Host<br/>GPU Accelerated] 
-    
-    %% Presentation Layer
-    DB <-->|SQL Queries<br/>Vector Search| DASH[Streamlit Dashboard<br/>Charts + AI Chat<br/>Port 8502]
-    OLLAMA <-->|http://host.docker.internal:11434<br/>RAG Generation| DASH
-    
-    %% User
-    USER[👤 User] -->|Browser| DASH
-    
-    %% Monitoring
-    FLINK_UI[Flink Web UI<br/>Port 8081] -.->|Monitor Jobs| FLINK
-    USER -.->|Monitor| FLINK_UI
-
-    style KAFKA fill:#ff6b6b
-    style FLINK fill:#4ecdc4
-    style DB fill:#95e1d3
-    style OLLAMA fill:#f38181
-    style DASH fill:#aa96da
+    API[Finnhub API] -->|60s poll| PROD[Producers]
+    PROD -->|JSON| KAFKA[Kafka KRaft<br/>stock_news · stock_prices]
+    KAFKA -->|news| FLINK[Flink + NLTK VADER]
+    FLINK --> DB[(PostgreSQL market_mood)]
+    KAFKA -->|prices| PC[price_consumer]
+    PC --> DB
+    KAFKA -->|news| RAG[rag_ingest]
+    RAG --> DB
+    DB <--> DASH[Streamlit :8502]
+    OLLAMA[Ollama Llama 3<br/>Windows host] <--> DASH
+    USER[User] --> DASH
+    FLINK_UI[Flink UI :8081] -.-> FLINK
 ```
 
 ### Core Components
@@ -302,68 +346,41 @@ To enable the AI Analyst to use your Windows GPU:
 
 ### 📖 **[Complete Documentation Index](docs/DOCUMENTATION_INDEX.md)** ⭐
 
-**Navigate all 34+ documentation files organized by user need and experience level.**
+**Consolidated index** — ~25 active guides; legacy paths redirect automatically.
 
-### Essential Guides
+### Essential guides
 
-| Document | Description | Est. Time |
-|----------|-------------|-----------|
-| **[🚀 Getting Started](docs/GETTING_STARTED.md)** | Complete beginner's guide with step-by-step instructions | 15 min |
-| **[🔧 Troubleshooting](docs/TROUBLESHOOTING.md)** | Comprehensive troubleshooting guide for all common issues | Reference |
-| **[⚙️ Environment Setup](docs/setup/ENV_FILE_GUIDE.md)** | Detailed guide for configuring .env and API keys | 10 min |
-| **[🐳 Docker vs Script](docs/DOCKER_VS_SCRIPT_GUIDE.md)** | When to use `start_data_pipeline.sh` vs `docker-compose` | 10 min |
-| **[🌊 Flink Job Guide](docs/FLINK_JOB_GUIDE.md)** | Managing and troubleshooting Flink sentiment jobs | 10 min |
-| **[🏗️ System Architecture](docs/architecture/SYSTEM_ARCHITECTURE.md)** | Complete system design and component explanations | 20 min |
-| **[🤖 LLM Integration](docs/setup/LLM_API_INTEGRATION.md)** | Guide for setting up Ollama and cloud LLMs | 15 min |
+| Document | Description |
+|----------|-------------|
+| [Getting Started](docs/GETTING_STARTED.md) | Full setup walkthrough |
+| [Troubleshooting](docs/TROUBLESHOOTING.md) | Master runbook |
+| [Environment setup](docs/setup/ENV_FILE_GUIDE.md) | `.env`, packages, paths |
+| [Docker vs script](docs/DOCKER_VS_SCRIPT_GUIDE.md) | Startup script vs compose |
+| [Flink job guide](docs/FLINK_JOB_GUIDE.md) | Job lifecycle |
+| [Flink fixes](docs/troubleshooting/FLINK_FIXES.md) | Connectors, Python, Kafka |
+| [Docker architecture](docs/architecture/DOCKER.md) | Services, KRaft, profiles |
+| [System architecture](docs/architecture/SYSTEM_ARCHITECTURE.md) | Pipeline design |
+| [LLM integration](docs/setup/LLM_API_INTEGRATION.md) | Ollama / cloud LLMs |
 
-### Documentation by Category
+### More reference
 
 <details>
-<summary><b>📂 Setup & Configuration (8 docs)</b></summary>
+<summary><b>Setup & technical</b></summary>
 
-- [Getting Started](docs/GETTING_STARTED.md) - Complete setup walkthrough
-- [ENV_FILE_GUIDE](docs/setup/ENV_FILE_GUIDE.md) - Environment variables
-- [LLM_API_INTEGRATION](docs/setup/LLM_API_INTEGRATION.md) - AI setup
-- [PHASE1_QUICKSTART](docs/setup/PHASE1_QUICKSTART.md) - Fast setup
-- [REQUIREMENTS_BY_PHASE](docs/setup/REQUIREMENTS_BY_PHASE.md) - Dependencies
-- [SETUP_WORKFLOW](docs/setup/SETUP_WORKFLOW.md) - Alternative approach
-- [INSTALLATION_EXPLAINED](docs/setup/INSTALLATION_EXPLAINED.md) - Why each step
-- [UV_SETUP](docs/setup/UV_SETUP.md) - Alternative package manager
+- [Requirements by phase](docs/setup/REQUIREMENTS_BY_PHASE.md)
+- [Installation explained](docs/setup/INSTALLATION_EXPLAINED.md)
+- [Producer architecture](docs/architecture/PRODUCER_ARCHITECTURE.md)
+- [Python files](docs/technical/PYTHON_FILES_ARCHITECTURE.md)
+- [NLTK sentiment](docs/technical/NLTK_SENTIMENT_ANALYSIS.md)
+- [Stock & tickers](docs/technical/STOCK_CONFIGURATION.md)
 </details>
 
 <details>
-<summary><b>🏗️ Architecture & Design (6 docs)</b></summary>
+<summary><b>Troubleshooting</b></summary>
 
-- [SYSTEM_ARCHITECTURE](docs/architecture/SYSTEM_ARCHITECTURE.md) - Complete overview
-- [DOCKER_COMPOSE_EXPLAINED](docs/architecture/DOCKER_COMPOSE_EXPLAINED.md) - Service structure
-- [PRODUCER_ARCHITECTURE](docs/architecture/PRODUCER_ARCHITECTURE.md) - Data ingestion
-- [PROFILES_EXPLAINED](docs/architecture/PROFILES_EXPLAINED.md) - Docker profiles
-- [TECHNICAL_EXPLANATIONS](docs/architecture/TECHNICAL_EXPLANATIONS.md) - Design decisions
-- [WHY_DOCKER_INSTALLS_PACKAGES](docs/architecture/WHY_DOCKER_INSTALLS_PACKAGES.md) - Dependencies
-</details>
-
-<details>
-<summary><b>🔬 Technical Deep Dives (6 docs)</b></summary>
-
-- [NLTK_SENTIMENT_ANALYSIS](docs/technical/NLTK_SENTIMENT_ANALYSIS.md) - How sentiment works
-- [DOCKER_ARCHITECTURE](docs/technical/DOCKER_ARCHITECTURE.md) - Container design
-- [PYTHON_FILES_ARCHITECTURE](docs/technical/PYTHON_FILES_ARCHITECTURE.md) - Code structure
-- [STOCK_CONFIGURATION](docs/technical/STOCK_CONFIGURATION.md) - Managing symbols
-- [TICKER_SEED_FILE](docs/technical/TICKER_SEED_FILE.md) - tickers.json format
-- [TICKER_OPTIMIZATION](docs/technical/TICKER_OPTIMIZATION.md) - Performance tuning
-</details>
-
-<details>
-<summary><b>🔧 Troubleshooting (8 docs)</b></summary>
-
-- [TROUBLESHOOTING](docs/TROUBLESHOOTING.md) - **Master guide** ⭐
-- [DOCKER_VS_SCRIPT_GUIDE](docs/DOCKER_VS_SCRIPT_GUIDE.md) - Command issues
-- [FLINK_KAFKA_CONNECTOR_FIX](docs/troubleshooting/FLINK_KAFKA_CONNECTOR_FIX.md)
-- [FIX_POSTGRES_CREDENTIALS](docs/troubleshooting/FIX_POSTGRES_CREDENTIALS.md)
-- [DASHBOARD_NO_DATA_TROUBLESHOOTING](docs/troubleshooting/DASHBOARD_NO_DATA_TROUBLESHOOTING.md)
-- [PORT_CONFLICT_FIX](docs/troubleshooting/PORT_CONFLICT_FIX.md)
-- [FLINK_PYTHON_FIX](docs/troubleshooting/FLINK_PYTHON_FIX.md)
-- [QUICK_FIX_POSTGRES](docs/troubleshooting/QUICK_FIX_POSTGRES.md)
+- [TROUBLESHOOTING](docs/TROUBLESHOOTING.md) (primary)
+- [Flink fixes](docs/troubleshooting/FLINK_FIXES.md)
+- [Port conflicts](docs/troubleshooting/PORT_CONFLICT_FIX.md)
 </details>
 
 ### Quick Access by User Type
@@ -389,7 +406,7 @@ To enable the AI Analyst to use your Windows GPU:
 <td><b>🔧 DevOps</b></td>
 <td>
 1. <a href="docs/DOCKER_VS_SCRIPT_GUIDE.md">Docker Guide</a><br>
-2. <a href="docs/technical/DOCKER_ARCHITECTURE.md">Containers</a><br>
+2. <a href="docs/architecture/DOCKER.md">Containers</a><br>
 3. <a href="docs/TROUBLESHOOTING.md">Operations</a>
 </td>
 </tr>
@@ -497,7 +514,7 @@ docker stats
 docker exec -it market_postgres psql -U market_user -d market_mood
 
 # Useful queries:
-SELECT COUNT(*) FROM stock_prices;
+SELECT COUNT(*) FROM price_log;
 SELECT * FROM sentiment_log ORDER BY timestamp DESC LIMIT 10;
 \dt  # List tables
 \q   # Exit
