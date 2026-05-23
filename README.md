@@ -12,7 +12,7 @@
 
 📊 **[Live Presentation](https://vgandhi1.github.io/MARKET_MOOD_RING/)** · [Static slides](manage/presentation.html) · [Leadership deck (Markdown)](manage/leadership-review-deck.md)
 
-*Pages: **Settings → Pages → Source: GitHub Actions**, then run **Deploy GitHub Pages** workflow ([.github/workflows/pages.yml](.github/workflows/pages.yml)).*
+*Pages: **Settings → Pages → Deploy from branch → `gh-pages` / (root)** — not `main`; then run **Deploy GitHub Pages** workflow ([.github/workflows/pages.yml](.github/workflows/pages.yml)).*
 
 </div>
 
@@ -69,7 +69,7 @@ The **Market Mood Ring** is a real-time financial analytics platform that scores
 
 ### Leadership presentation (GitHub Pages)
 
-Use the **[live slide deck](https://vgandhi1.github.io/MARKET_MOOD_RING/)** for stakeholder walkthroughs (architecture, business value, roadmap). Source: [`manage/presentation.html`](manage/presentation.html). Deploys on push when [Pages](https://github.com/vgandhi1/MARKET_MOOD_RING/settings/pages) uses **GitHub Actions** as the source.
+Use the **[live slide deck](https://vgandhi1.github.io/MARKET_MOOD_RING/)** for stakeholder walkthroughs (architecture, business value, roadmap). Source: [`manage/presentation.html`](manage/presentation.html). Deploys on push when [Pages](https://github.com/vgandhi1/MARKET_MOOD_RING/settings/pages) uses branch **`gh-pages`** (root), not `main`.
 
 ### Live Dashboard in Action
 ![Live Dashboard Demo](live-dashboard.gif)
