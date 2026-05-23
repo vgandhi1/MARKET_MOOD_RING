@@ -318,11 +318,38 @@ docker exec market_producer env | grep FINNHUB
 
 ---
 
+## Environment variables vs Python packages
+
+| | Environment variables | Python packages |
+|--|----------------------|-------------------|
+| **Purpose** | Runtime configuration | Installed dependencies |
+| **Source** | `.env` → `docker-compose.yaml` | `requirements.txt` → Docker build |
+| **In container** | Process env (`os.getenv(...)`) | `/usr/local/lib/python3.9/site-packages/` |
+
+Packages are installed at **image build** (`pip install -r requirements.txt` in each Dockerfile). Variables are injected at **container start**.
+
+---
+
+## Producer path inside containers
+
+`docker-compose.yaml` mounts `./producer:/app`, so scripts are at `/app/news_producer.py`:
+
+```bash
+# Correct
+docker-compose run --rm producer python news_producer.py
+
+# Wrong
+docker-compose run --rm producer python producer/news_producer.py
+```
+
+---
+
 ## 🔗 Related Documentation
 
+- [Getting Started](../GETTING_STARTED.md) - Complete setup
 - [LLM API Integration](LLM_API_INTEGRATION.md) - Detailed LLM setup
 - [Requirements by Phase](REQUIREMENTS_BY_PHASE.md) - Package requirements
-- [Setup Workflow](SETUP_WORKFLOW.md) - Complete setup process
+- [Docker architecture](../architecture/DOCKER.md) - Service layout
 
 ---
 

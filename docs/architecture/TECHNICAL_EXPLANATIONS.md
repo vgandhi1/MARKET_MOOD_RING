@@ -129,16 +129,16 @@ docker-compose logs kafka
 **Examples in our project:**
 ```bash
 # Execute command in running Flink jobmanager container
-docker exec -it vibe_jobmanager ./bin/flink run -py /opt/flink/usrlib/flink_sentiment.py
+docker exec -it market_jobmanager ./bin/flink run -py /opt/flink/usrlib/flink_sentiment.py
 
 # Access PostgreSQL shell
-docker exec -it vibe_postgres psql -U vibe_user -d crypto_vibes
+docker exec -it market_postgres psql -U market_user -d market_mood
 
 # Check Kafka topics
-docker exec -it vibe_kafka kafka-topics --list --bootstrap-server localhost:9092
+docker exec -it market_kafka kafka-topics --list --bootstrap-server localhost:9092
 
-# Initialize Ollama model (Phase 2)
-docker exec -it vibe_ollama ollama run llama3
+# Initialize Ollama model (on Windows host — not in Docker)
+# ollama run llama3
 ```
 
 **When to use:**
@@ -166,14 +166,14 @@ docker-compose run producer python news_producer.py
 **Scenario 3: Submitting Flink Job**
 ```bash
 # docker exec: Execute in already-running container
-docker exec -it vibe_jobmanager ./bin/flink run -py /opt/flink/usrlib/flink_sentiment.py
+docker exec -it market_jobmanager ./bin/flink run -py /opt/flink/usrlib/flink_sentiment.py
 ```
 → Flink jobmanager is already running (started by docker-compose), we just execute a command in it
 
 **Scenario 4: Database Access**
 ```bash
 # docker exec: Access running PostgreSQL container
-docker exec -it vibe_postgres psql -U vibe_user -d crypto_vibes
+docker exec -it market_postgres psql -U market_user -d market_mood
 ```
 → PostgreSQL is already running, we access its shell
 

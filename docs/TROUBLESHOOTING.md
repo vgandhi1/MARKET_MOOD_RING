@@ -74,7 +74,7 @@ docker exec market_jobmanager ./bin/flink list 2>/dev/null | grep -q "RUNNING" \
 
 echo ""
 echo "6. Data Collection:"
-PRICE_COUNT=$(docker exec market_postgres psql -U market_user -d market_mood -t -c "SELECT COUNT(*) FROM stock_prices;" 2>/dev/null | tr -d ' ')
+PRICE_COUNT=$(docker exec market_postgres psql -U market_user -d market_mood -t -c "SELECT COUNT(*) FROM price_log;" 2>/dev/null | tr -d ' ')
 echo "Stock prices in DB: $PRICE_COUNT"
 
 SENTIMENT_COUNT=$(docker exec market_postgres psql -U market_user -d market_mood -t -c "SELECT COUNT(*) FROM sentiment_log;" 2>/dev/null | tr -d ' ')
@@ -637,7 +637,7 @@ docker-compose up -d postgres
 
 **Symptoms:**
 ```
-psql: ERROR:  relation "stock_prices" does not exist
+psql: ERROR:  relation "price_log" does not exist
 ```
 
 **Cause:** init.sql didn't run or failed.
@@ -658,7 +658,7 @@ docker exec -i market_postgres psql -U market_user -d market_mood < init.sql
 docker exec market_postgres psql -U market_user -d market_mood -c "\dt"
 
 # Should list:
-# - stock_prices
+# - price_log
 # - sentiment_log
 # - financial_knowledge
 
@@ -685,21 +685,21 @@ PostgreSQL volume size growing
 docker exec market_postgres psql -U market_user -d market_mood -c "
 SELECT 
   pg_size_pretty(pg_database_size('market_mood')) as total_size,
-  pg_size_pretty(pg_total_relation_size('stock_prices')) as prices_size,
+  pg_size_pretty(pg_total_relation_size('price_log')) as prices_size,
   pg_size_pretty(pg_total_relation_size('sentiment_log')) as sentiment_size;
 "
 
 # 2. Check row counts
 docker exec market_postgres psql -U market_user -d market_mood -c "
 SELECT 
-  (SELECT COUNT(*) FROM stock_prices) as prices,
+  (SELECT COUNT(*) FROM price_log) as prices,
   (SELECT COUNT(*) FROM sentiment_log) as sentiment,
   (SELECT COUNT(*) FROM financial_knowledge) as knowledge;
 "
 
 # 3. Implement data retention (keep last 7 days)
 docker exec market_postgres psql -U market_user -d market_mood -c "
-DELETE FROM stock_prices WHERE timestamp < NOW() - INTERVAL '7 days';
+DELETE FROM price_log WHERE timestamp < NOW() - INTERVAL '7 days';
 DELETE FROM sentiment_log WHERE timestamp < NOW() - INTERVAL '7 days';
 VACUUM FULL;
 "
@@ -708,7 +708,7 @@ VACUUM FULL;
 cat > cleanup_old_data.sh << 'EOF'
 #!/bin/bash
 docker exec market_postgres psql -U market_user -d market_mood << SQL
-DELETE FROM stock_prices WHERE timestamp < NOW() - INTERVAL '7 days';
+DELETE FROM price_log WHERE timestamp < NOW() - INTERVAL '7 days';
 DELETE FROM sentiment_log WHERE timestamp < NOW() - INTERVAL '7 days';
 VACUUM;
 SQL
@@ -786,7 +786,7 @@ Dashboard loads but charts are empty
 ```bash
 # 1. Check if data exists in database
 docker exec market_postgres psql -U market_user -d market_mood -c "
-SELECT COUNT(*) FROM stock_prices;
+SELECT COUNT(*) FROM price_log;
 SELECT COUNT(*) FROM sentiment_log;
 "
 
@@ -1177,14 +1177,14 @@ Same timestamp/symbol appears multiple times
 # 1. Check for duplicates
 docker exec market_postgres psql -U market_user -d market_mood -c "
 SELECT symbol, timestamp, COUNT(*) 
-FROM stock_prices 
+FROM price_log 
 GROUP BY symbol, timestamp 
 HAVING COUNT(*) > 1;
 "
 
 # 2. Remove duplicates (keep latest)
 docker exec market_postgres psql -U market_user -d market_mood -c "
-DELETE FROM stock_prices a USING stock_prices b
+DELETE FROM price_log a USING price_log b
 WHERE a.id < b.id 
 AND a.symbol = b.symbol 
 AND a.timestamp = b.timestamp;
@@ -1192,7 +1192,7 @@ AND a.timestamp = b.timestamp;
 
 # 3. Add unique constraint to prevent future duplicates
 docker exec market_postgres psql -U market_user -d market_mood -c "
-ALTER TABLE stock_prices 
+ALTER TABLE price_log 
 ADD CONSTRAINT unique_symbol_timestamp UNIQUE (symbol, timestamp);
 "
 ```
@@ -1227,7 +1227,7 @@ curl "https://finnhub.io/api/v1/quote?symbol=TSLA&token=${FINNHUB_API_KEY}"
 
 # 4. Check database
 docker exec market_postgres psql -U market_user -d market_mood -c "
-SELECT DISTINCT symbol FROM stock_prices ORDER BY symbol;
+SELECT DISTINCT symbol FROM price_log ORDER BY symbol;
 "
 
 # 5. Restart producers to retry
@@ -1306,7 +1306,7 @@ docker exec market_jobmanager ./bin/flink cancel $(docker exec market_jobmanager
 
 # 2. Truncate tables
 docker exec market_postgres psql -U market_user -d market_mood -c "
-TRUNCATE TABLE stock_prices, sentiment_log, financial_knowledge CASCADE;
+TRUNCATE TABLE price_log, sentiment_log, financial_knowledge CASCADE;
 "
 
 # 3. Restart everything
@@ -1358,9 +1358,7 @@ cat debug_info.txt
 - **Architecture:** [docs/architecture/SYSTEM_ARCHITECTURE.md](architecture/SYSTEM_ARCHITECTURE.md)
 - **Environment Setup:** [docs/setup/ENV_FILE_GUIDE.md](setup/ENV_FILE_GUIDE.md)
 - **Specific Fixes:**
-  - [Flink Kafka Fix](troubleshooting/FLINK_KAFKA_CONNECTOR_FIX.md)
-  - [PostgreSQL Fix](troubleshooting/FIX_POSTGRES_CREDENTIALS.md)
-  - [Dashboard No Data](troubleshooting/DASHBOARD_NO_DATA_TROUBLESHOOTING.md)
+  - [Flink fixes](troubleshooting/FLINK_FIXES.md) — connectors, Python, group.id
 
 ---
 

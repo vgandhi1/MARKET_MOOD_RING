@@ -39,7 +39,7 @@ Then access dashboard at: http://localhost:8502
 ## Already Fixed
 
 ✅ Removed obsolete `version` attribute from docker-compose.yaml  
-✅ Cleaned up stale `vibe_dashboard` container
+✅ Cleaned up stale dashboard container from a previous run
 
 ## Next Steps
 

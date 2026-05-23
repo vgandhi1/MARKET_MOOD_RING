@@ -293,7 +293,7 @@ INSTRUCTIONS:
 1. Analyze the 'CONTEXT' provided above.
 2. Be concise (under 3 sentences).
 3. Explain financial jargon simply (ELI5 style).
-4. End with a "Vibe Check" summary."""
+4. End with a "Mood Summary" (one-line sentiment headline)."""
     
     if LLM_PROVIDER == 'openai':
         from openai import OpenAI
@@ -462,7 +462,7 @@ Modify `dashboard/app.py` to use chosen provider (see integration example above)
 
 - [Requirements by Phase](REQUIREMENTS_BY_PHASE.md)
 - [Phase Planning](../phases/PHASE_PLANNING.md)
-- [Setup Workflow](SETUP_WORKFLOW.md)
+- [Getting Started](../GETTING_STARTED.md)
 
 ---
 

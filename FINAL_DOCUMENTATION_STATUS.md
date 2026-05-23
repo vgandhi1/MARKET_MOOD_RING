@@ -1,8 +1,10 @@
 # ✅ Final Documentation Status - Updated February 2026
 
-**Last Updated:** February 10, 2026 05:10 UTC  
-**Version:** 2.0 - Production Ready  
-**Status:** Complete with comprehensive guides and modernized docs  
+**Last Updated:** May 2026  
+**Version:** 2.1 - Consolidated documentation  
+**Status:** Complete — see [docs/DOCUMENTATION_INDEX.md](docs/DOCUMENTATION_INDEX.md)
+
+> **May 2026 consolidation:** Canonical guides include [docs/architecture/DOCKER.md](docs/architecture/DOCKER.md) and [docs/troubleshooting/FLINK_FIXES.md](docs/troubleshooting/FLINK_FIXES.md). Nineteen legacy paths now redirect (setup duplicates, old Docker docs, micro-fixes).  
 **Sentiment Analysis:** ✅ Fully operational (NLTK vader_lexicon fixed)
 
 ---
@@ -299,26 +301,11 @@ Market_Mood_Ring/
 
 ---
 
-## ⚠️ Known Documentation Items
+## Documentation alignment
 
-### Files with Minor Outdated References
-(Core concepts valid, but some older technical details)
+All operational docs use `market_*` containers, `market_mood` database, and `price_log` / `sentiment_log` / `financial_knowledge` tables. Navigation: `docs/DOCUMENTATION_INDEX.md`. Docker reference: `docs/architecture/DOCKER.md`.
 
-- `docs/setup/PHASE1_SETUP_COMPLETE.md` - Has some `vibe_*` references
-- `docs/architecture/TECHNICAL_EXPLANATIONS.md` - Old container names
-- `docs/architecture/SYSTEM_ARCHITECTURE.md` - Uses `price_log` table name
-- `docs/architecture/PRODUCER_ARCHITECTURE.md` - Uses `price_log` table name
-- `docs/technical/PYTHON_FILES_ARCHITECTURE.md` - Uses `price_log` table name
-- `docs/summary/DEPLOYMENT_SUMMARY.md` - Historical references
-
-**Note:** These don't affect functionality - the actual system uses correct names. See `docs/DOCUMENTATION_UPDATE_LOG.md` for details.
-
-### Migration Path
-For users encountering old references:
-1. Actual code and scripts are 100% correct
-2. New comprehensive guides are authoritative
-3. Older architectural docs provide valid concepts
-4. When in doubt, follow GETTING_STARTED.md
+When in doubt, follow [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md) and `./start_data_pipeline.sh`.
 
 ---
 

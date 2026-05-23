@@ -16,7 +16,7 @@ Build and validate the core ETL pipeline with real-time sentiment analysis using
 #### ✅ Infrastructure
 - **Kafka** - Message streaming (stock_news, stock_prices topics)
 - **Zookeeper** - Kafka coordination
-- **PostgreSQL** - Data storage (crypto_vibes database)
+- **PostgreSQL** - Data storage (`market_mood` database)
 - **Flink** - Stream processing (JobManager + TaskManager)
 
 #### ✅ Data Ingestion

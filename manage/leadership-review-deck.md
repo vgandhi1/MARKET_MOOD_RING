@@ -5,6 +5,8 @@ Prepared for: Engineering and Product Leadership
 Date: 2026-05-03  
 Repo: `MARKET_MOOD_RING`
 
+**Live slides:** [https://vgandhi1.github.io/MARKET_MOOD_RING/](https://vgandhi1.github.io/MARKET_MOOD_RING/) · Source: [`manage/presentation.html`](presentation.html)
+
 ---
 
 ## 1) Executive Summary
@@ -76,7 +78,7 @@ Convert noisy, high-velocity market signals into clear, actionable narrative for
 ## 6) Business Value Delivered to Date
 
 - Demonstrates full-stack data + AI system integration, useful for stakeholder demos and technical hiring signals.
-- Provides near-real-time market "vibe" abstraction for rapid decision support.
+- Provides near-real-time market mood abstraction for rapid decision support.
 - Reduces interpretation latency: transforms raw headlines into concise sentiment and narrative.
 - Creates foundation for premium features (alerts, watchlists, risk signals, explainability trails).
 
@@ -181,7 +183,15 @@ Priority controls to add:
 
 ---
 
-## Appendix B: Suggested Presentation Flow (15 minutes)
+## Appendix B: Presentation assets
+
+| Asset | Path | Use |
+|-------|------|-----|
+| Interactive slides | `manage/presentation.html` | Keyboard navigation (←/→), dot nav, 10+ slides |
+| GitHub Pages | `https://vgandhi1.github.io/MARKET_MOOD_RING/` | Public demo after workflow deploys `gh-pages` |
+| This document | `manage/leadership-review-deck.md` | Speaker notes and appendix |
+
+## Appendix C: Suggested Presentation Flow (15 minutes)
 
 - 2 min: business problem and executive summary
 - 4 min: architecture and current capabilities demo snapshot

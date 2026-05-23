@@ -42,12 +42,10 @@ docker exec market_jobmanager ./bin/flink cancel <job-id>
 
 ### Container Names
 
-| ❌ WRONG | ✅ CORRECT |
-|----------|-----------|
-| `vibe_jobmanager` | `market_jobmanager` |
-| `vibe_taskmanager` | `market_taskmanager` |
-
-**Common mistake:** Using old container names from a different project!
+| Service | Container name |
+|---------|----------------|
+| Flink JobManager | `market_jobmanager` |
+| Flink TaskManager | `market_taskmanager` |
 
 ---
 
@@ -207,13 +205,11 @@ docker exec market_jobmanager ./bin/flink list
 
 ### Common Mistakes
 
-#### ❌ WRONG: Using Old Container Name
+#### ❌ WRONG: Using Wrong Container Name
 
 ```bash
-# This will fail if you copied from old project
-docker exec vibe_jobmanager ./bin/flink run -py /opt/flink/usrlib/flink_sentiment.py
-
-# Error: No such container: vibe_jobmanager
+# Wrong — container does not exist
+docker exec wrong_jobmanager ./bin/flink run -py /opt/flink/usrlib/flink_sentiment.py
 ```
 
 **✅ FIX:** Use `market_jobmanager`
@@ -374,14 +370,14 @@ volumes:
 
 ## Troubleshooting
 
-### Issue 1: "No such container: vibe_jobmanager"
+### Issue 1: "No such container" for JobManager
 
 **Error:**
 ```bash
-Error response from daemon: No such container: vibe_jobmanager
+Error response from daemon: No such container: ...
 ```
 
-**Cause:** Using wrong container name (from old project or tutorial)
+**Cause:** Wrong container name or Flink stack not started
 
 **Solution:**
 ```bash
@@ -675,7 +671,7 @@ When Flink job issues occur, check in order:
 ### Manual Operations
 
 **When needed:**
-- Use correct container name: `market_jobmanager` (not `vibe_jobmanager`)
+- Use container name: `market_jobmanager`
 - Use correct file path: `/opt/flink/usrlib/flink_sentiment.py`
 - Wait for JobManager to be ready before submitting
 
@@ -699,10 +695,11 @@ http://localhost:8081
 
 ## Related Documentation
 
-- [Getting Started](../GETTING_STARTED.md) - Initial setup
-- [Troubleshooting](../TROUBLESHOOTING.md) - Common issues
-- [NLTK Sentiment Analysis](../technical/NLTK_SENTIMENT_ANALYSIS.md) - How sentiment works
-- [System Architecture](../architecture/SYSTEM_ARCHITECTURE.md) - Overall design
+- [Getting Started](GETTING_STARTED.md) - Initial setup
+- [Flink fixes](troubleshooting/FLINK_FIXES.md) - Connector JARs, Python, group.id
+- [Troubleshooting](TROUBLESHOOTING.md) - Common issues
+- [NLTK Sentiment Analysis](technical/NLTK_SENTIMENT_ANALYSIS.md) - How sentiment works
+- [System Architecture](architecture/SYSTEM_ARCHITECTURE.md) - Overall design
 
 ---
 

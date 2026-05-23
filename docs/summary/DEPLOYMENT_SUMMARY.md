@@ -1,194 +1,69 @@
-# 🚀 Deployment Summary
+# Deployment Summary
 
-## ✅ Files Created/Updated
+## Infrastructure (current)
 
-### Infrastructure Files
-1. **`docker-compose.yaml`** - Complete infrastructure setup with:
-   - Zookeeper & Kafka (with 24h retention)
-   - PostgreSQL with pgvector (database: `crypto_vibes`)
-   - Flink JobManager & TaskManager (v1.17)
-   - Ollama (LLM service)
-   - Streamlit Dashboard
-   - Producer service (for running data ingestion scripts)
+| Service | Container | Port | Notes |
+|---------|-----------|------|-------|
+| Kafka (KRaft) | `market_kafka` | 9092 | Topics: `stock_news`, `stock_prices` |
+| PostgreSQL + pgvector | `market_postgres` | 5432 | DB: `market_mood`, user: `market_user` |
+| Flink JobManager | `market_jobmanager` | 8081 | Submits `flink_sentiment.py` |
+| Flink TaskManager | `market_taskmanager` | — | Stream processing workers |
+| Streamlit dashboard | `market_dashboard` | 8502 | Charts + AI Analyst |
+| Producers (profile) | `market_news_producer`, etc. | — | Started via `start_data_pipeline.sh` |
 
-2. **`Dockerfile.flink`** - Custom Flink image with:
-   - Python 3 support
-   - PyFlink 1.17.0
-   - NLTK with Vader lexicon pre-downloaded
+**Ollama** runs on the **Windows host** (not in Docker) at `http://host.docker.internal:11434`.
 
-3. **`init.sql`** - Database initialization script:
-   - Creates `crypto_vibes` database
-   - Enables pgvector extension
-   - Creates all required tables (price_log, sentiment_log, financial_knowledge)
-   - Sets up indexes for performance
+## Recommended deployment
 
-### Dashboard Files
-4. **`dashboard/app.py`** - Complete Streamlit application with:
-   - Live price dashboard with interactive charts (Plotly)
-   - AI Analyst chat interface
-   - Database connection handling
-   - Vector search integration
-   - Ollama API integration with correct system prompt
-
-5. **`dashboard/Dockerfile`** - Streamlit container configuration
-
-6. **`dashboard/requirements.txt`** - Python dependencies for dashboard
-
-### Producer Files
-7. **`producer/news_producer.py`** - Fetches news from Finnhub API and publishes to Kafka `stock_news` topic
-
-8. **`producer/price_producer.py`** - Fetches stock prices from Finnhub API and publishes to Kafka `stock_prices` topic
-
-9. **`producer/price_consumer.py`** - Consumes prices from Kafka and writes to PostgreSQL `price_log` table
-
-10. **`producer/rag_ingest.py`** - Already exists, consumes news and creates embeddings
-
-11. **`producer/Dockerfile`** - Producer service container configuration
-
-12. **`producer/requirements.txt`** - Python dependencies for producers
-
-### Configuration Files
-13. **`.gitignore`** - Git ignore patterns for environment files, data directories, etc.
-
-## 📋 Deployment Checklist
-
-### Prerequisites
-- [x] Docker Desktop installed (8GB+ RAM allocated)
-- [ ] Finnhub API key obtained from https://finnhub.io/
-
-### Step 1: Environment Setup
 ```bash
-# Create .env file in project root
-echo "FINNHUB_API_KEY=your_actual_api_key_here" > .env
+cp .env.example .env   # add FINNHUB_API_KEY
+chmod +x start_data_pipeline.sh
+./start_data_pipeline.sh
 ```
 
-### Step 2: Launch Infrastructure
+The script starts infrastructure, producers, submits the Flink job, and verifies connectivity.
+
+## Manual verification
+
 ```bash
-docker-compose up -d --build
+# Kafka topics
+docker exec -it market_kafka kafka-topics --list --bootstrap-server localhost:9092
+
+# Database tables
+docker exec -it market_postgres psql -U market_user -d market_mood -c "\dt"
+
+# Flink jobs
+docker exec market_jobmanager ./bin/flink list
 ```
 
-This will start:
-- Zookeeper
-- Kafka (ports 9092)
-- PostgreSQL (port 5432, database: crypto_vibes)
-- Flink JobManager (port 8081)
-- Flink TaskManager
-- Ollama (port 11434)
-- Streamlit Dashboard (port 8502)
+Expected tables: `price_log`, `sentiment_log`, `financial_knowledge`.
 
-### Step 3: Initialize Ollama Model
-```bash
-docker exec -it vibe_ollama ollama run llama3
-# Wait for download, then type /bye to exit
-```
+## Access URLs
 
-### Step 4: Start Data Pipelines
+- **Dashboard:** http://localhost:8502
+- **Flink UI:** http://localhost:8081
+- **PostgreSQL:** `localhost:5432` (`market_user` / `market_password` / `market_mood`)
 
-**Terminal A - News Producer:**
-```bash
-docker-compose run producer python news_producer.py
-```
-
-**Terminal B - Price Producer:**
-```bash
-docker-compose run producer python price_producer.py
-```
-
-**Terminal C - Price Consumer (writes to DB):**
-```bash
-docker-compose run producer python price_consumer.py
-```
-
-**Terminal D - RAG Embeddings:**
-```bash
-docker-compose run producer python rag_ingest.py
-```
-
-### Step 5: Submit Flink Job
-```bash
-docker exec -it vibe_jobmanager ./bin/flink run -py /opt/flink/usrlib/flink_sentiment.py
-```
-
-### Step 6: Access Services
-- **Streamlit Dashboard:** http://localhost:8502
-- **Flink Dashboard:** http://localhost:8081
-- **PostgreSQL:** localhost:5432 (user: vibe_user, pass: vibe_password, db: crypto_vibes)
-- **Ollama API:** http://localhost:11434
-
-## 🔍 Verification Steps
-
-1. **Check Kafka Topics:**
-   ```bash
-   docker exec -it vibe_kafka kafka-topics --list --bootstrap-server localhost:9092
-   ```
-   Should show: `stock_news`, `stock_prices`
-
-2. **Check Database Tables:**
-   ```bash
-   docker exec -it vibe_postgres psql -U vibe_user -d crypto_vibes -c "\dt"
-   ```
-   Should show: `price_log`, `sentiment_log`, `financial_knowledge`
-
-3. **Check Flink Job Status:**
-   - Visit http://localhost:8081
-   - Check "Running Jobs" section
-
-4. **Test Streamlit Dashboard:**
-   - Visit http://localhost:8502
-   - Navigate to "📊 Live Dashboard" - should show price charts
-   - Navigate to "💬 AI Analyst" - test chat functionality
-
-## 🐛 Troubleshooting
-
-### Database Connection Issues
-- Ensure PostgreSQL container is healthy: `docker-compose ps postgres`
-- Check logs: `docker-compose logs postgres`
-
-### Kafka Connection Issues
-- Ensure Kafka is healthy: `docker-compose ps kafka`
-- Check logs: `docker-compose logs kafka`
-- Verify topics exist: `docker exec -it vibe_kafka kafka-topics --list --bootstrap-server localhost:9092`
-
-### Ollama Connection Issues
-- Verify Ollama is running: `docker-compose ps ollama`
-- Check if llama3 model is pulled: `docker exec -it vibe_ollama ollama list`
-- If not, run: `docker exec -it vibe_ollama ollama run llama3`
-
-### Flink Job Issues
-- Check Flink logs: `docker-compose logs jobmanager`
-- Verify job is submitted: Visit http://localhost:8081
-- Check if NLTK data is available in container
-
-## 📊 Architecture Flow
+## Architecture flow
 
 ```
-Finnhub API → Producers → Kafka Topics
+Finnhub API → Producers → Kafka (stock_news, stock_prices)
                               ↓
                     ┌─────────┴─────────┐
                     ↓                   ↓
-            Flink (Sentiment)    RAG Ingestion
+            Flink (sentiment)    RAG ingest (embeddings)
                     ↓                   ↓
             sentiment_log        financial_knowledge
                     ↓                   ↓
-            ┌───────┴───────────────────┴───────┐
-            ↓                                   ↓
-    Streamlit Dashboard ←→ Ollama (LLM)
-    (Charts + Chat)
+            Streamlit Dashboard ←→ Ollama (host LLM)
 ```
 
-## ✨ Key Features Deployed
+## Features deployed
 
-1. ✅ Real-time news ingestion from Finnhub
-2. ✅ Real-time price ingestion from Finnhub
-3. ✅ Kafka message streaming (24h retention)
-4. ✅ Flink-based sentiment analysis (NLTK Vader)
-5. ✅ Vector embeddings (all-MiniLM-L6-v2)
-6. ✅ PostgreSQL with pgvector for RAG
-7. ✅ Streamlit dashboard with live charts
-8. ✅ AI Analyst chat interface with Ollama/Llama3
-9. ✅ Complete system prompt implementation
+1. Real-time news and price ingestion (Finnhub, 60s polling)
+2. Kafka streaming (KRaft, no Zookeeper)
+3. Flink NLTK VADER sentiment on `stock_news`
+4. pgvector RAG storage and Streamlit AI Analyst
+5. 72-hour price charts and live sentiment table
 
----
-
-**Deployment Date:** $(date)
-**Status:** ✅ Ready for deployment
+**Status:** Production-ready for portfolio/demo use.

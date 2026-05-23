@@ -203,7 +203,7 @@ INSTRUCTIONS:
 3. If the context has no relevant news, admit it. Say: "I don't see any recent news for [Stock] in my live database."
 4. Be concise (under 3 sentences).
 5. Explain financial jargon simply (ELI5 style).
-6. End with a "Vibe Check" summary (e.g., "Overall Vibe: 🐻 Bearish due to regulatory fears")."""
+6. End with a "Mood Summary" (e.g., "Overall Mood: 🐻 Bearish due to regulatory fears")."""
                     
                     # Call Local Ollama (Windows Host via Docker internal gateway)
                     ollama_base_url = os.getenv("OLLAMA_BASE_URL", "http://host.docker.internal:11434")

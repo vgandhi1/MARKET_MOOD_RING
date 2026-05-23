@@ -20,7 +20,7 @@ The system comes pre-configured with **30 optimized tickers** selected for:
 **Financials & Fintech (Market Health Indicators):**
 - JPM (JPMorgan Chase), BAC (Bank of America), GS (Goldman Sachs)
 - V (Visa), MA (Mastercard), PYPL (PayPal)
-- COIN (Coinbase - correlates with crypto "vibes")
+- COIN (Coinbase - correlates with crypto sector sentiment)
 
 **Consumer & Entertainment (Brand Sentiment):**
 - DIS (Disney), NKE (Nike), KO (Coca-Cola), PEP (PepsiCo)
@@ -134,6 +134,40 @@ STOCK_SYMBOLS=JPM,BAC,GS,V,MA
    echo "STOCK_SYMBOLS=AAPL,TSLA,GOOGL" >> .env
    docker-compose run producer python news_producer.py
    ```
+
+---
+
+## Ticker seed file (`producer/tickers.json`)
+
+Tickers are managed in JSON instead of hardcoded Python lists.
+
+**Load order (highest first):**
+
+1. `STOCK_SYMBOLS` in `.env` (comma-separated)
+2. `producer/tickers.json`
+3. Hardcoded fallback if the file is missing
+
+**Format:**
+```json
+{
+  "tickers": [
+    { "symbol": "AAPL", "name": "Apple", "sector": "Technology", "category": "Tech Giants" }
+  ]
+}
+```
+
+Only `symbol` is required. Edit the file and restart producer containers. See also **`producer/README_TICKERS.md`**.
+
+---
+
+## Rate limit optimization (30-ticker default)
+
+- **News:** 1 API call per symbol per cycle → 30 symbols ≈ 30 calls/min (Finnhub free tier: 60/min)
+- **Prices:** Quote API handles all symbols; 60s cycle is safe
+- News producer auto-adjusts cycle time when symbol count grows:  
+  `cycle_time = max(60, (num_symbols / 60) * 60 + 5)` seconds
+
+**Do not** run multiple news producers in parallel on the same API key.
 
 ---
 

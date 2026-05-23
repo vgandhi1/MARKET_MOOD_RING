@@ -130,7 +130,7 @@ Remember: **Each ticker = 1 API call** for news data.
 - **30 tickers:** Safe with 60-second cycle (30 calls/min)
 - **More tickers:** System auto-adjusts cycle time
 
-See `TICKER_OPTIMIZATION.md` for rate limit details.
+See `docs/technical/STOCK_CONFIGURATION.md` for rate limit details.
 
 ## Best Practices
 

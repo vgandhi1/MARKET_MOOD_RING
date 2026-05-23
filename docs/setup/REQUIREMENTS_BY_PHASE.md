@@ -440,6 +440,6 @@ pip install ollama>=0.1.0
 
 ## 🔗 Related Documentation
 
-- [Setup Workflow](SETUP_WORKFLOW.md)
+- [Getting Started](../GETTING_STARTED.md)
 - [Phase Planning](../phases/PHASE_PLANNING.md)
 - [Installation Explained](INSTALLATION_EXPLAINED.md)
